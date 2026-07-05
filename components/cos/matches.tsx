@@ -9,6 +9,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   MapPin,
   Wallet,
   ExternalLink,
@@ -24,7 +25,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { updateMatchStatus, regenerateMatches, saveCoverLetter, type MatchDoc } from "@/lib/actions"
+import { updateMatchStatus, regenerateMatches, saveCoverLetter, saveResumeForMatch, type MatchDoc, type ResumeEntry } from "@/lib/actions"
+import { AtsChecklist } from "@/components/cos/ats-checklist"
 
 const statusStyles: Record<MatchDoc["status"], string> = {
   "New":        "bg-primary/10 text-primary",
@@ -37,9 +39,10 @@ interface MatchesProps {
   initialMatches: MatchDoc[]
   initialSelectedMatchId?: string
   onMatchSelected?: () => void
+  resumes?: ResumeEntry[]
 }
 
-export function Matches({ initialMatches, initialSelectedMatchId, onMatchSelected }: MatchesProps) {
+export function Matches({ initialMatches, initialSelectedMatchId, onMatchSelected, resumes = [] }: MatchesProps) {
   const [matches, setMatches] = useState<MatchDoc[]>(initialMatches)
   const [selected, setSelected] = useState<MatchDoc | null>(
     initialSelectedMatchId ? (initialMatches.find((m) => m.matchId === initialSelectedMatchId) ?? null) : null
@@ -76,6 +79,7 @@ export function Matches({ initialMatches, initialSelectedMatchId, onMatchSelecte
         match={selected}
         onStatusChange={handleStatusChange}
         onBack={() => setSelected(null)}
+        resumes={resumes}
       />
     )
   }
@@ -179,11 +183,29 @@ function MatchDetail({
   match,
   onStatusChange,
   onBack,
+  resumes = [],
 }: {
   match: MatchDoc
   onStatusChange: (matchId: string, status: MatchDoc["status"]) => void
   onBack: () => void
+  resumes?: ResumeEntry[]
 }) {
+  const defaultResume = resumes.find((r) => r.isDefault) ?? resumes[0] ?? null
+  const initialResumeId = match.resumeId ?? defaultResume?.id ?? ""
+  const [selectedResumeId, setSelectedResumeId] = useState(initialResumeId)
+  const [savingResume, setSavingResume] = useState(false)
+  const activeResume = resumes.find((r) => r.id === selectedResumeId) ?? defaultResume
+
+  const handleResumeChange = async (id: string) => {
+    setSelectedResumeId(id)
+    setSavingResume(true)
+    try {
+      await saveResumeForMatch(match.matchId, id)
+    } finally {
+      setSavingResume(false)
+    }
+  }
+
   const [copied, setCopied] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [coverLetter, setCoverLetter] = useState(match.coverLetter ?? "")
@@ -274,6 +296,8 @@ function MatchDetail({
               </Button>
             </div>
           </div>
+
+
         </div>
       </div>
     )
@@ -412,6 +436,42 @@ function MatchDetail({
               </div>
             ))}
           </div>
+        </Card>
+
+        {/* Resume selector + ATS check */}
+        <Card className="p-6">
+          <div className="mb-5">
+            <h3 className="mb-1 text-sm font-semibold text-foreground">Resume</h3>
+            <p className="text-xs text-muted-foreground">Choose which resume to use for this application. The ATS check below reflects the selected resume.</p>
+          </div>
+
+          {resumes.length > 0 ? (
+            <div className="mb-5 flex flex-wrap items-center gap-3">
+              <label htmlFor="resume-select" className="text-xs font-medium text-muted-foreground">Applying with</label>
+              <div className="relative">
+                <select
+                  id="resume-select"
+                  value={selectedResumeId}
+                  onChange={(e) => handleResumeChange(e.target.value)}
+                  className="h-9 appearance-none rounded-md border border-border bg-background pl-3 pr-8 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  {resumes.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.label || "Untitled resume"}{r.isDefault ? " (default)" : ""}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              </div>
+              {savingResume && <span className="text-xs text-muted-foreground">Saving...</span>}
+            </div>
+          ) : (
+            <p className="mb-4 text-xs text-muted-foreground">
+              No resumes found. Add one in <span className="font-medium text-foreground">Settings → Resumes</span>.
+            </p>
+          )}
+
+          {activeResume && <AtsChecklist resume={activeResume.text} match={match} />}
         </Card>
 
         {/* Cover letter */}
