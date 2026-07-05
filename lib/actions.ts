@@ -25,6 +25,7 @@ export type DirectivesDoc = {
   defaultCoverLetter: string
   dailyMatchLimit: number
   dailyCoverLetterLimit: number
+  minMatchScore: number
   updatedAt: Date
 }
 
@@ -42,6 +43,7 @@ export type MatchDoc = {
   postedAgo: string
   breakdown: { label: string; met: boolean; note: string }[]
   coverLetter: string
+  jobUrl?: string
   updatedAt: Date
 }
 

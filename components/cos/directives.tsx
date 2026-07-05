@@ -35,6 +35,7 @@ interface DirectivesState {
   defaultCoverLetter: string
   dailyMatchLimit: number
   dailyCoverLetterLimit: number
+  minMatchScore: number
 }
 
 interface DirectivesProps {
@@ -62,6 +63,7 @@ export function Directives({ initialDirectives, initialAgentConfigs, defaultTab 
     defaultCoverLetter: d?.defaultCoverLetter ?? "",
     dailyMatchLimit: d?.dailyMatchLimit ?? 10,
     dailyCoverLetterLimit: d?.dailyCoverLetterLimit ?? 5,
+    minMatchScore: d?.minMatchScore ?? 80,
   })
 
   const set = <K extends keyof DirectivesState>(key: K, value: DirectivesState[K]) =>
@@ -83,6 +85,7 @@ export function Directives({ initialDirectives, initialAgentConfigs, defaultTab 
     defaultCoverLetter: state.defaultCoverLetter,
     dailyMatchLimit: state.dailyMatchLimit,
     dailyCoverLetterLimit: state.dailyCoverLetterLimit,
+    minMatchScore: state.minMatchScore,
   })
 
   return (
@@ -162,11 +165,37 @@ function JobTargetsTab({ state, set, buildPayload }: TabProps) {
     <div className="flex flex-col gap-4">
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Daily Limits</CardTitle>
-          <CardDescription>Control how much work your agents do each day.</CardDescription>
+          <CardTitle className="text-base">Match Preferences</CardTitle>
+          <CardDescription>Control the quality bar and daily volume of your matches.</CardDescription>
         </CardHeader>
         <CardContent>
           <FieldGroup>
+            <Field>
+              <FieldLabel>
+                Minimum match score
+                <Badge variant="secondary" className="ml-2 tabular-nums text-primary">
+                  {state.minMatchScore}%
+                </Badge>
+              </FieldLabel>
+              <div className="px-1 pt-3 pb-1">
+                <Slider
+                  value={[state.minMatchScore]}
+                  onValueChange={(v) => set("minMatchScore", v[0])}
+                  min={50}
+                  max={100}
+                  step={1}
+                  aria-label="Minimum match score"
+                />
+                <div className="mt-2 flex justify-between text-xs text-muted-foreground tabular-nums">
+                  <span>50%</span>
+                  <span>100%</span>
+                </div>
+              </div>
+              <FieldDescription>Only show matches that score at or above this threshold. Higher means fewer but better matches.</FieldDescription>
+            </Field>
+
+            <Separator />
+
             <Field>
               <FieldLabel>
                 Matches to surface per day

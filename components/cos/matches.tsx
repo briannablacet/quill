@@ -10,7 +10,7 @@ import {
   ChevronRight,
   MapPin,
   Wallet,
-  Send,
+  ExternalLink,
   RefreshCw,
 } from "lucide-react"
 import {
@@ -197,18 +197,6 @@ function MatchDetail({
     }
   }
 
-  const apply = () => {
-    startTransition(async () => {
-      try {
-        await updateMatchStatus(match.matchId, "Applied")
-        onStatusChange(match.matchId, "Applied")
-        toast.success(`Application queued for ${match.company}`)
-      } catch {
-        toast.error("Failed to update status")
-      }
-    })
-  }
-
   const markReviewed = () => {
     if (match.status !== "New") return
     startTransition(async () => {
@@ -314,21 +302,26 @@ function MatchDetail({
       </ScrollArea>
 
       <SheetFooter className="flex-row gap-2 border-t border-border">
-        <Button
-          className="flex-1"
-          onClick={apply}
-          disabled={isPending || match.status === "Applied"}
-        >
-          <Send data-icon="inline-start" />
-          {match.status === "Applied" ? "Already applied" : "Apply with this letter"}
-        </Button>
+        {match.jobUrl ? (
+          <Button className="flex-1" asChild>
+            <a href={match.jobUrl} target="_blank" rel="noopener noreferrer">
+              <ExternalLink data-icon="inline-start" />
+              Apply for this role
+            </a>
+          </Button>
+        ) : (
+          <Button className="flex-1" variant="outline" disabled>
+            <ExternalLink data-icon="inline-start" />
+            No job link yet
+          </Button>
+        )}
         <Button variant="outline" onClick={copyLetter}>
           {copied ? (
             <Check data-icon="inline-start" />
           ) : (
             <Copy data-icon="inline-start" />
           )}
-          Copy
+          Copy letter
         </Button>
       </SheetFooter>
     </>
