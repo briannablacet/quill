@@ -39,6 +39,7 @@ import { saveDirectives, type DirectivesDoc } from "@/lib/actions"
 
 interface DirectivesProps {
   initialDirectives: DirectivesDoc | null
+  defaultTab?: string
 }
 
 // Shared state shape passed to each tab
@@ -55,8 +56,9 @@ interface DirectivesState {
   linkedinUrl: string
 }
 
-export function Directives({ initialDirectives }: DirectivesProps) {
+export function Directives({ initialDirectives, defaultTab }: DirectivesProps) {
   const d = initialDirectives
+  const [activeTab, setActiveTab] = useState(defaultTab ?? "targets")
 
   // All directives state lives here so every tab save writes the full document
   const [state, setState] = useState<DirectivesState>({
@@ -101,7 +103,7 @@ export function Directives({ initialDirectives }: DirectivesProps) {
         </p>
       </div>
 
-      <Tabs defaultValue="targets" className="gap-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-6">
         <TabsList className="w-full max-w-xl">
           <TabsTrigger value="targets">
             <Target data-icon="inline-start" />

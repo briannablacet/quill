@@ -27,9 +27,16 @@ interface DashboardProps {
 export function Dashboard({ initialDirectives, initialAgentConfigs, initialMatches }: DashboardProps) {
   const [view, setView] = useState<ViewKey>("command")
   const [mobileNav, setMobileNav] = useState(false)
+  const [directivesTab, setDirectivesTab] = useState<string | undefined>(undefined)
 
   const navigate = (v: ViewKey) => {
     setView(v)
+    setMobileNav(false)
+  }
+
+  const goToProfile = () => {
+    setDirectivesTab("resume")
+    setView("directives")
     setMobileNav(false)
   }
 
@@ -37,14 +44,26 @@ export function Dashboard({ initialDirectives, initialAgentConfigs, initialMatch
     <div className="flex min-h-svh bg-background">
       {/* Desktop sidebar */}
       <aside className="sticky top-0 hidden h-svh w-72 shrink-0 border-r border-sidebar-border lg:block">
-        <AppSidebar active={view} onNavigate={navigate} />
+        <AppSidebar
+          active={view}
+          onNavigate={navigate}
+          profileName={initialDirectives?.name}
+          profileHeadline={initialDirectives?.headline}
+          onProfileClick={goToProfile}
+        />
       </aside>
 
       {/* Mobile sidebar */}
       <Sheet open={mobileNav} onOpenChange={setMobileNav}>
         <SheetContent side="left" className="w-72 p-0">
           <SheetTitle className="sr-only">Navigation</SheetTitle>
-          <AppSidebar active={view} onNavigate={navigate} />
+          <AppSidebar
+            active={view}
+            onNavigate={navigate}
+            profileName={initialDirectives?.name}
+            profileHeadline={initialDirectives?.headline}
+            onProfileClick={goToProfile}
+          />
         </SheetContent>
       </Sheet>
 
@@ -89,7 +108,10 @@ export function Dashboard({ initialDirectives, initialAgentConfigs, initialMatch
             <StaffOrganization initialAgentConfigs={initialAgentConfigs} />
           )}
           {view === "directives" && (
-            <Directives initialDirectives={initialDirectives} />
+            <Directives
+              initialDirectives={initialDirectives}
+              defaultTab={directivesTab}
+            />
           )}
           {view === "matches" && <Matches initialMatches={initialMatches} />}
         </main>
