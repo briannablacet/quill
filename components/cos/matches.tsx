@@ -240,13 +240,14 @@ function MatchDetail({
             /* Rendered view with proper paragraph spacing */
             <div className="min-h-[520px] cursor-text rounded-md border border-border bg-background px-6 py-6 text-sm text-foreground" onClick={() => setRawEditing(true)}>
               {coverLetter
-                ? coverLetter.split(/\n\n+/).map((para, i) => (
-                    <p key={i} className="mb-6 leading-6 last:mb-0">
-                      {para.split('\n').map((line, j, arr) => (
-                        <span key={j}>{line}{j < arr.length - 1 && <br />}</span>
-                      ))}
-                    </p>
-                  ))
+                ? coverLetter
+                    // Normalize: treat any newline (single or double) as a paragraph break
+                    .split(/\n+/)
+                    .map(line => line.trim())
+                    .filter(line => line.length > 0)
+                    .map((para, i) => (
+                      <p key={i} className="mb-8 leading-6 last:mb-0">{para}</p>
+                    ))
                 : <span className="text-muted-foreground">Click to edit your cover letter...</span>
               }
             </div>
