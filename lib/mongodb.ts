@@ -1,30 +1,25 @@
 import { MongoClient, Db } from "mongodb"
 
-const uri = process.env.MONGODB_URI || "mongodb+srv://brianna-blacet:mongoBb14c3t%21@cluster0-clone.flavamx.mongodb.net/chiefofstaff?retryWrites=true&w=majority"
-
-let client: MongoClient
-let clientPromise: Promise<MongoClient>
-
 declare global {
   // eslint-disable-next-line no-var
   var _mongoClientPromise: Promise<MongoClient> | undefined
 }
 
-if (process.env.NODE_ENV === "development") {
-  // In development, reuse the client across hot reloads to avoid exhausting connections
-  if (!global._mongoClientPromise) {
-    client = new MongoClient(uri)
-    global._mongoClientPromise = client.connect()
+function getClientPromise(): Promise<MongoClient> {
+  const uri = process.env.MONGODB_URI
+  if (!uri) {
+    throw new Error("MONGODB_URI environment variable is not set")
   }
-  clientPromise = global._mongoClientPromise
-} else {
-  client = new MongoClient(uri)
-  clientPromise = client.connect()
+  if (process.env.NODE_ENV === "development") {
+    if (!global._mongoClientPromise) {
+      global._mongoClientPromise = new MongoClient(uri).connect()
+    }
+    return global._mongoClientPromise
+  }
+  return new MongoClient(uri).connect()
 }
 
 export async function getDb(): Promise<Db> {
-  const c = await clientPromise
-  return c.db("chiefofstaff")
+  const client = await getClientPromise()
+  return client.db("chiefofstaff")
 }
-
-export default clientPromise
