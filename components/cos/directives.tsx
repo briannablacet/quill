@@ -84,10 +84,14 @@ export function Directives({ initialDirectives, defaultTab }: DirectivesProps) {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-6">
-        <TabsList className="w-full max-w-xl">
+        <TabsList className="w-full max-w-2xl">
           <TabsTrigger value="targets">
             <Target data-icon="inline-start" />
             Job Targets
+          </TabsTrigger>
+          <TabsTrigger value="companies">
+            <Building2 data-icon="inline-start" />
+            Dream Companies
           </TabsTrigger>
           <TabsTrigger value="dealbreakers">
             <Ban data-icon="inline-start" />
@@ -101,6 +105,9 @@ export function Directives({ initialDirectives, defaultTab }: DirectivesProps) {
 
         <TabsContent value="targets">
           <JobTargetsTab state={state} set={set} buildPayload={buildPayload} />
+        </TabsContent>
+        <TabsContent value="companies">
+          <DreamCompaniesTab state={state} set={set} buildPayload={buildPayload} />
         </TabsContent>
         <TabsContent value="dealbreakers">
           <DealbreakersTab state={state} set={set} buildPayload={buildPayload} />
@@ -200,14 +207,14 @@ function JobTargetsTab({ state, set, buildPayload }: TabProps) {
   )
 }
 
-function DealbreakersTab({ state, set, buildPayload }: TabProps) {
+function DreamCompaniesTab({ state, set, buildPayload }: TabProps) {
   const [isPending, startTransition] = useTransition()
 
   const save = () => {
     startTransition(async () => {
       try {
         await saveDirectives(buildPayload())
-        toast.success("Settings saved")
+        toast.success("Dream companies saved")
       } catch {
         toast.error("Failed to save")
       }
@@ -215,49 +222,74 @@ function DealbreakersTab({ state, set, buildPayload }: TabProps) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <span className="flex size-8 items-center justify-center rounded-lg bg-primary/15 text-primary">
-                <Building2 className="size-4" />
-              </span>
-              <div>
-                <CardTitle className="text-base">Dream Companies</CardTitle>
-                <CardDescription>Your Networking Agent prioritizes these.</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <span className="flex size-8 items-center justify-center rounded-lg bg-primary/15 text-primary">
+            <Building2 className="size-4" />
+          </span>
+          <div>
+            <CardTitle className="text-base">Dream Companies</CardTitle>
+            <CardDescription>Your Networking Agent prioritizes outreach to these companies. Add any you&apos;d love to work at.</CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <FieldGroup>
+          <Field>
             <TagInput tags={state.dreamCompanies} onChange={(tags) => set("dreamCompanies", tags)} placeholder="Add a company..." tone="primary" icon={Building2} />
-          </CardContent>
-        </Card>
+          </Field>
+          <Field orientation="horizontal">
+            <Button onClick={save} disabled={isPending}>
+              {isPending ? "Saving..." : "Save dream companies"}
+            </Button>
+          </Field>
+        </FieldGroup>
+      </CardContent>
+    </Card>
+  )
+}
 
-        <Card className="border-destructive/30">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <span className="flex size-8 items-center justify-center rounded-lg bg-destructive/15 text-destructive">
-                <Ban className="size-4" />
-              </span>
-              <div>
-                <CardTitle className="text-base">Anti-List / Dealbreakers</CardTitle>
-                <CardDescription>Any match tripping these is auto-rejected.</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
+function DealbreakersTab({ state, set, buildPayload }: TabProps) {
+  const [isPending, startTransition] = useTransition()
+
+  const save = () => {
+    startTransition(async () => {
+      try {
+        await saveDirectives(buildPayload())
+        toast.success("Dealbreakers saved")
+      } catch {
+        toast.error("Failed to save")
+      }
+    })
+  }
+
+  return (
+    <Card className="border-destructive/30">
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <span className="flex size-8 items-center justify-center rounded-lg bg-destructive/15 text-destructive">
+            <Ban className="size-4" />
+          </span>
+          <div>
+            <CardTitle className="text-base">Dealbreakers</CardTitle>
+            <CardDescription>Any match that trips one of these is auto-rejected by the Resume Scorer Agent.</CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <FieldGroup>
+          <Field>
             <TagInput tags={state.dealbreakers} onChange={(tags) => set("dealbreakers", tags)} placeholder="Add a dealbreaker..." tone="destructive" icon={X} />
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="flex gap-2">
-        <Button onClick={save} disabled={isPending}>
-          {isPending ? "Saving..." : "Save target companies and dealbreakers"}
-        </Button>
-      </div>
-    </div>
+          </Field>
+          <Field orientation="horizontal">
+            <Button onClick={save} disabled={isPending}>
+              {isPending ? "Saving..." : "Save dealbreakers"}
+            </Button>
+          </Field>
+        </FieldGroup>
+      </CardContent>
+    </Card>
   )
 }
 
