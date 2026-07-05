@@ -9,7 +9,6 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
   MapPin,
   Wallet,
   ExternalLink,
@@ -26,6 +25,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { updateMatchStatus, regenerateMatches, saveCoverLetter, saveResumeForMatch, saveCoverLetterToLibrary, type MatchDoc, type ResumeEntry, type CoverLetterEntry } from "@/lib/actions"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AtsChecklist } from "@/components/cos/ats-checklist"
 import { CoverLetterLibrary } from "@/components/cos/cover-letter-library"
 
@@ -327,26 +327,24 @@ function MatchDetail({
           {savedCoverLetters.length > 0 && (
             <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-accent/30 px-3 py-2.5">
               <span className="text-xs font-medium text-muted-foreground">Use saved cover letter:</span>
-              <div className="relative">
-                <select
-                  defaultValue=""
-                  onChange={(e) => {
-                    const found = savedCoverLetters.find((l) => l.id === e.target.value)
-                    if (found) {
-                      setCoverLetter(found.text)
-                      setRawEditing(false)
-                    }
-                    e.target.value = ""
-                  }}
-                  className="h-8 appearance-none rounded-md border border-border bg-background pl-3 pr-7 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  <option value="" disabled>Choose one...</option>
+              <Select
+                onValueChange={(id) => {
+                  const found = savedCoverLetters.find((l) => l.id === id)
+                  if (found) {
+                    setCoverLetter(found.text)
+                    setRawEditing(false)
+                  }
+                }}
+              >
+                <SelectTrigger className="h-8 min-w-48 text-xs">
+                  <SelectValue placeholder="Choose one..." />
+                </SelectTrigger>
+                <SelectContent>
                   {savedCoverLetters.map((l) => (
-                    <option key={l.id} value={l.id}>{l.name || "Untitled"}</option>
+                    <SelectItem key={l.id} value={l.id}>{l.name || "Untitled"}</SelectItem>
                   ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-2 top-1/2 size-3 -translate-y-1/2 text-muted-foreground" />
-              </div>
+                </SelectContent>
+              </Select>
             </div>
           )}
 
@@ -522,22 +520,19 @@ function MatchDetail({
 
           {resumes.length > 0 ? (
             <div className="mb-5 flex flex-wrap items-center gap-3">
-              <label htmlFor="resume-select" className="text-xs font-medium text-muted-foreground">Applying with résumé</label>
-              <div className="relative">
-                <select
-                  id="resume-select"
-                  value={selectedResumeId}
-                  onChange={(e) => handleResumeChange(e.target.value)}
-                  className="h-9 appearance-none rounded-md border border-border bg-background pl-3 pr-8 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                >
+              <span className="text-xs font-medium text-muted-foreground">Applying with résumé</span>
+              <Select value={selectedResumeId} onValueChange={handleResumeChange}>
+                <SelectTrigger className="h-9 min-w-48">
+                  <SelectValue placeholder="Choose a résumé..." />
+                </SelectTrigger>
+                <SelectContent>
                   {resumes.map((r) => (
-                    <option key={r.id} value={r.id}>
+                    <SelectItem key={r.id} value={r.id}>
                       {r.label || "Untitled résumé"}{r.isDefault ? " (default)" : ""}
-                    </option>
+                    </SelectItem>
                   ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-              </div>
+                </SelectContent>
+              </Select>
               {savingResume && <span className="text-xs text-muted-foreground">Saving...</span>}
             </div>
           ) : (

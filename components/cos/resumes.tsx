@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useTransition, useMemo } from "react"
-import { Plus, X, FileText, UploadCloud, Loader2, Sparkles, ChevronDown, ChevronUp } from "lucide-react"
+import { Plus, X, FileText, UploadCloud, Loader2, Sparkles, ChevronDown, ChevronUp, Download } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { saveDirectives, type DirectivesDoc, type ResumeEntry } from "@/lib/actions"
 import { parseResumeFile } from "@/lib/parse-resume"
 import { runResumeAtsChecks } from "@/lib/ats-checker"
+import { downloadResumeAsDocx } from "@/lib/export-resume"
 
 interface ResumesProps {
   initialDirectives: DirectivesDoc | null
@@ -168,6 +169,18 @@ export function Resumes({ initialDirectives }: ResumesProps) {
                       onClick={() => setDefault(resume.id)}
                     >
                       Set as default
+                    </Button>
+                  )}
+                  {resume.text.trim().length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-muted-foreground hover:text-foreground"
+                      aria-label="Download as .docx"
+                      title="Download as .docx"
+                      onClick={() => downloadResumeAsDocx(resume.text, resume.label || "resume")}
+                    >
+                      <Download />
                     </Button>
                   )}
                   <Button
