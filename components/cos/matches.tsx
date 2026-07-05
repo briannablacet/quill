@@ -25,8 +25,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { updateMatchStatus, regenerateMatches, saveCoverLetter, saveResumeForMatch, type MatchDoc, type ResumeEntry } from "@/lib/actions"
+import { updateMatchStatus, regenerateMatches, saveCoverLetter, saveResumeForMatch, saveCoverLetterToLibrary, type MatchDoc, type ResumeEntry, type CoverLetterEntry } from "@/lib/actions"
 import { AtsChecklist } from "@/components/cos/ats-checklist"
+import { CoverLetterLibrary } from "@/components/cos/cover-letter-library"
 
 const statusStyles: Record<MatchDoc["status"], string> = {
   "New":        "bg-primary/10 text-primary",
@@ -40,9 +41,11 @@ interface MatchesProps {
   initialSelectedMatchId?: string
   onMatchSelected?: () => void
   resumes?: ResumeEntry[]
+  initialCoverLetters?: CoverLetterEntry[]
 }
 
-export function Matches({ initialMatches, initialSelectedMatchId, onMatchSelected, resumes = [] }: MatchesProps) {
+export function Matches({ initialMatches, initialSelectedMatchId, onMatchSelected, resumes = [], initialCoverLetters = [] }: MatchesProps) {
+  const [tab, setTab] = useState<"matches" | "cover-letters">("matches")
   const [matches, setMatches] = useState<MatchDoc[]>(initialMatches)
   const [selected, setSelected] = useState<MatchDoc | null>(
     initialSelectedMatchId ? (initialMatches.find((m) => m.matchId === initialSelectedMatchId) ?? null) : null
@@ -80,12 +83,46 @@ export function Matches({ initialMatches, initialSelectedMatchId, onMatchSelecte
         onStatusChange={handleStatusChange}
         onBack={() => setSelected(null)}
         resumes={resumes}
+        savedCoverLetters={initialCoverLetters}
       />
     )
   }
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Top-level tabs */}
+      <div className="flex border-b border-border">
+        <button
+          type="button"
+          onClick={() => setTab("matches")}
+          className={cn(
+            "px-4 pb-3 pt-1 text-sm font-medium transition-colors",
+            tab === "matches"
+              ? "border-b-2 border-foreground text-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          Matches
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("cover-letters")}
+          className={cn(
+            "px-4 pb-3 pt-1 text-sm font-medium transition-colors",
+            tab === "cover-letters"
+              ? "border-b-2 border-foreground text-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          Cover Letters
+        </button>
+      </div>
+
+      {tab === "cover-letters" && (
+        <CoverLetterLibrary initialLetters={initialCoverLetters} />
+      )}
+
+      {tab === "matches" && <>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
           Every role that cleared your filters. Click any match for the full breakdown.
@@ -175,6 +212,7 @@ export function Matches({ initialMatches, initialSelectedMatchId, onMatchSelecte
           ))}
         </ul>
       </Card>
+      </>}
     </div>
   )
 }
@@ -184,11 +222,13 @@ function MatchDetail({
   onStatusChange,
   onBack,
   resumes = [],
+  savedCoverLetters = [],
 }: {
   match: MatchDoc
   onStatusChange: (matchId: string, status: MatchDoc["status"]) => void
   onBack: () => void
   resumes?: ResumeEntry[]
+  savedCoverLetters?: CoverLetterEntry[]
 }) {
   const defaultResume = resumes.find((r) => r.isDefault) ?? resumes[0] ?? null
   const initialResumeId = match.resumeId ?? defaultResume?.id ?? ""
@@ -229,6 +269,14 @@ function MatchDetail({
     setSavingLetter(true)
     try {
       await saveCoverLetter(match.matchId, coverLetter)
+      // Auto-save to library — use existing entry if this match already has one, otherwise create
+      const existingEntry = savedCoverLetters.find((l) => l.matchId === match.matchId)
+      await saveCoverLetterToLibrary({
+        id: existingEntry?.id ?? `cl-${match.matchId}`,
+        name: existingEntry?.name ?? `${match.company} Cover Letter`,
+        text: coverLetter,
+        matchId: match.matchId,
+      })
       toast.success("Cover letter saved")
     } catch {
       toast.error("Failed to save cover letter")
@@ -272,6 +320,33 @@ function MatchDetail({
                     ))
                 : <span className="text-muted-foreground">Click to edit your cover letter...</span>
               }
+            </div>
+          )}
+
+          {/* Saved cover letter picker */}
+          {savedCoverLetters.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-accent/30 px-3 py-2.5">
+              <span className="text-xs font-medium text-muted-foreground">Use saved cover letter:</span>
+              <div className="relative">
+                <select
+                  defaultValue=""
+                  onChange={(e) => {
+                    const found = savedCoverLetters.find((l) => l.id === e.target.value)
+                    if (found) {
+                      setCoverLetter(found.text)
+                      setRawEditing(false)
+                    }
+                    e.target.value = ""
+                  }}
+                  className="h-8 appearance-none rounded-md border border-border bg-background pl-3 pr-7 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="" disabled>Choose one...</option>
+                  {savedCoverLetters.map((l) => (
+                    <option key={l.id} value={l.id}>{l.name || "Untitled"}</option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2 top-1/2 size-3 -translate-y-1/2 text-muted-foreground" />
+              </div>
             </div>
           )}
 

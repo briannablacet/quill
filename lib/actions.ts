@@ -60,6 +60,16 @@ export type MatchDoc = {
   updatedAt: Date
 }
 
+export type CoverLetterEntry = {
+  _id?: string
+  userId: string
+  id: string          // nanoid
+  name: string        // e.g. "Linear Cover Letter", user-customizable
+  text: string
+  matchId?: string    // the match it was originally generated from (optional)
+  updatedAt: Date
+}
+
 export type AgentDoc = {
   _id?: string
   userId: string
@@ -162,6 +172,53 @@ export async function saveCoverLetter(matchId: string, coverLetter: string): Pro
     { userId: USER_ID, matchId },
     { $set: { coverLetter, updatedAt: new Date() } }
   )
+  revalidatePath("/")
+}
+
+// ---------------------------------------------------------------------------
+// Cover Letter Library
+// ---------------------------------------------------------------------------
+
+export async function getCoverLetters(): Promise<CoverLetterEntry[]> {
+  try {
+    const db = await getDb()
+    const docs = await db
+      .collection<CoverLetterEntry>("cover_letters")
+      .find({ userId: USER_ID })
+      .sort({ updatedAt: -1 })
+      .toArray()
+    return docs.map((d) => ({ ...d, _id: d._id?.toString() }))
+  } catch {
+    return []
+  }
+}
+
+export async function saveCoverLetterToLibrary(
+  entry: Pick<CoverLetterEntry, "id" | "name" | "text" | "matchId">
+): Promise<void> {
+  const db = await getDb()
+  await db.collection<CoverLetterEntry>("cover_letters").updateOne(
+    { userId: USER_ID, id: entry.id },
+    {
+      $set: {
+        userId: USER_ID,
+        id: entry.id,
+        name: entry.name,
+        text: entry.text,
+        matchId: entry.matchId,
+        updatedAt: new Date(),
+      },
+    },
+    { upsert: true }
+  )
+  revalidatePath("/")
+}
+
+export async function deleteCoverLetterFromLibrary(id: string): Promise<void> {
+  const db = await getDb()
+  await db
+    .collection<CoverLetterEntry>("cover_letters")
+    .deleteOne({ userId: USER_ID, id })
   revalidatePath("/")
 }
 
