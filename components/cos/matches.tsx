@@ -13,22 +13,7 @@ import {
   Wallet,
   ExternalLink,
   RefreshCw,
-  Building2,
-  Clock,
-  Briefcase,
-} from "lucide-react"
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { Textarea } from "@/components/ui/textarea"
-import { updateMatchStatus, regenerateMatches, saveCoverLetter, type MatchDoc } from "@/lib/actions"
-import { cn } from "@/lib/utils"
-
-const statusStyles: Record<MatchDoc["status"], string> = {
-  New: "bg-primary/15 text-primary",
-  Reviewed: "bg-warning/15 text-warning",
-  Applied: "bg-success/15 text-success",
+  PenLine,
 }
 
 interface MatchesProps {
@@ -186,6 +171,7 @@ function MatchDetail({
   const [isPending, startTransition] = useTransition()
   const [coverLetter, setCoverLetter] = useState(match.coverLetter ?? "")
   const [savingLetter, setSavingLetter] = useState(false)
+  const [editingLetter, setEditingLetter] = useState(false)
 
   const copyLetter = async () => {
     try {
@@ -209,6 +195,39 @@ function MatchDetail({
     } finally {
       setSavingLetter(false)
     }
+  }
+
+  if (editingLetter) {
+    return (
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Button variant="ghost" size="sm" onClick={() => setEditingLetter(false)} className="-ml-2">
+            <ChevronLeft data-icon="inline-start" />
+            Back to match
+          </Button>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">{match.role} at {match.company}</span>
+            {savingLetter && <span className="text-xs text-muted-foreground">Saving...</span>}
+            <Button size="sm" variant="outline" onClick={copyLetter}>
+              {copied ? <Check data-icon="inline-start" /> : <Copy data-icon="inline-start" />}
+              {copied ? "Copied" : "Copy"}
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Cover Letter</p>
+          <Textarea
+            value={coverLetter}
+            onChange={(e) => setCoverLetter(e.target.value)}
+            onBlur={handleLetterBlur}
+            className="min-h-[520px] resize-y text-sm leading-relaxed"
+            placeholder="Your cover letter will appear here..."
+          />
+          <p className="text-right text-xs text-muted-foreground tabular-nums">{coverLetter.length} characters</p>
+        </div>
+      </div>
+    )
   }
 
   const markApplied = () => {
@@ -347,27 +366,19 @@ function MatchDetail({
         </Card>
 
         {/* Cover letter */}
-        <Card className="p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">Cover Letter</h3>
-              <p className="text-xs text-muted-foreground">Click to edit. Auto-saves on blur.</p>
-            </div>
-            <div className="flex items-center gap-2">
-              {savingLetter && <span className="text-xs text-muted-foreground">Saving...</span>}
-              <Button size="sm" variant="outline" onClick={copyLetter}>
-                {copied ? <Check data-icon="inline-start" /> : <Copy data-icon="inline-start" />}
-                {copied ? "Copied" : "Copy"}
-              </Button>
-            </div>
+        <Card className="flex flex-col gap-0 py-0">
+          <div className="flex-1 px-5 pt-5 pb-4">
+            <h3 className="mb-3 text-sm font-semibold text-foreground">Cover Letter</h3>
+            <p className="line-clamp-6 whitespace-pre-line text-xs leading-relaxed text-muted-foreground">
+              {coverLetter || "No cover letter generated yet."}
+            </p>
           </div>
-          <Textarea
-            value={coverLetter}
-            onChange={(e) => setCoverLetter(e.target.value)}
-            onBlur={handleLetterBlur}
-            className="min-h-72 resize-y text-sm leading-relaxed"
-            placeholder="Your cover letter will appear here..."
-          />
+          <div className="border-t border-border px-5 py-3">
+            <Button size="sm" variant="secondary" className="w-full" onClick={() => setEditingLetter(true)}>
+              <PenLine data-icon="inline-start" />
+              Open &amp; Edit
+            </Button>
+          </div>
         </Card>
       </div>
     </div>
