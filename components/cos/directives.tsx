@@ -38,7 +38,7 @@ interface DirectivesProps {
 
 export function Directives({ initialDirectives, defaultTab }: DirectivesProps) {
   const d = initialDirectives
-  const [activeTab, setActiveTab] = useState(defaultTab ?? "targets")
+  const [activeTab, setActiveTab] = useState(defaultTab ?? "resume")
 
   const [state, setState] = useState<DirectivesState>({
     name: d?.name ?? "",
@@ -85,6 +85,10 @@ export function Directives({ initialDirectives, defaultTab }: DirectivesProps) {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-6">
         <TabsList className="w-full max-w-2xl">
+          <TabsTrigger value="resume">
+            <FileText data-icon="inline-start" />
+            Resume &amp; Profile
+          </TabsTrigger>
           <TabsTrigger value="targets">
             <Target data-icon="inline-start" />
             Job Targets
@@ -97,12 +101,11 @@ export function Directives({ initialDirectives, defaultTab }: DirectivesProps) {
             <Ban data-icon="inline-start" />
             Dealbreakers
           </TabsTrigger>
-          <TabsTrigger value="resume">
-            <FileText data-icon="inline-start" />
-            Resume &amp; Profile
-          </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="resume">
+          <ResumeTab state={state} set={set} buildPayload={buildPayload} />
+        </TabsContent>
         <TabsContent value="targets">
           <JobTargetsTab state={state} set={set} buildPayload={buildPayload} />
         </TabsContent>
@@ -111,9 +114,6 @@ export function Directives({ initialDirectives, defaultTab }: DirectivesProps) {
         </TabsContent>
         <TabsContent value="dealbreakers">
           <DealbreakersTab state={state} set={set} buildPayload={buildPayload} />
-        </TabsContent>
-        <TabsContent value="resume">
-          <ResumeTab state={state} set={set} buildPayload={buildPayload} />
         </TabsContent>
       </Tabs>
     </div>
