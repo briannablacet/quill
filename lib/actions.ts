@@ -2,7 +2,6 @@
 
 import { getDb } from "@/lib/mongodb"
 import { revalidatePath } from "next/cache"
-import { archiveMatches } from "@/lib/cos-data"
 
 // ---------------------------------------------------------------------------
 // Types
@@ -142,25 +141,9 @@ export async function getMatches(): Promise<MatchDoc[]> {
       .collection<MatchDoc>("matches")
       .countDocuments({ userId: USER_ID })
 
-    // Seed from mock data on first run
+    // Seed from user's directives on first run
     if (count === 0) {
-      await db.collection<MatchDoc>("matches").insertMany(
-        archiveMatches.map((m) => ({
-          userId: USER_ID,
-          matchId: m.id,
-          company: m.company,
-          role: m.role,
-          location: m.location,
-          workModel: m.workModel,
-          salary: m.salary,
-          score: m.score,
-          status: m.status,
-          postedAgo: m.postedAgo,
-          breakdown: m.breakdown,
-          coverLetter: m.coverLetter,
-          updatedAt: new Date(),
-        }))
-      )
+      await seedMatchesFromDirectives(db)
     }
 
     const docs = await db
@@ -174,6 +157,90 @@ export async function getMatches(): Promise<MatchDoc[]> {
     console.error("[v0] getMatches failed:", err)
     return []
   }
+}
+
+export async function regenerateMatches(): Promise<void> {
+  const db = await getDb()
+  await db.collection<MatchDoc>("matches").deleteMany({ userId: USER_ID })
+  await seedMatchesFromDirectives(db)
+  revalidatePath("/")
+}
+
+async function seedMatchesFromDirectives(db: Awaited<ReturnType<typeof getDb>>) {
+  const directives = await db
+    .collection<DirectivesDoc>("directives")
+    .findOne({ userId: USER_ID })
+
+  // Use saved titles/companies or fall back to generic defaults
+  const titles = directives?.titles?.length
+    ? directives.titles
+    : ["Product Manager", "Senior Product Manager"]
+
+  const dreamCompanies = directives?.dreamCompanies?.length
+    ? directives.dreamCompanies
+    : ["Linear", "Vercel", "Notion"]
+
+  const location = directives?.locations?.[0] ?? "Remote (US)"
+  const salaryMin = directives?.salaryMin ?? 150000
+  const remoteOnly = directives?.remoteOnly ?? false
+  const name = directives?.name ?? "there"
+
+  const workModels: MatchDoc["workModel"][] = remoteOnly
+    ? ["Remote"]
+    : ["Remote", "Hybrid", "Remote", "Hybrid", "On-site"]
+
+  const companySuffixes = [
+    "Platform",
+    "Growth",
+    "Developer Experience",
+    "Core Product",
+    "AI",
+    "Enterprise",
+  ]
+
+  const salaryFloor = Math.round(salaryMin / 1000)
+
+  const seeds: Omit<MatchDoc, "_id">[] = dreamCompanies
+    .slice(0, 6)
+    .flatMap((company, ci) =>
+      titles.slice(0, 2).map((title, ti) => {
+        const suffix = companySuffixes[(ci * 2 + ti) % companySuffixes.length]
+        const score = 94 - ci * 3 - ti * 2
+        const salaryLow = salaryFloor + ci * 5 + ti * 10
+        const salaryHigh = salaryLow + 40
+        const wm = workModels[(ci + ti) % workModels.length]
+        const hoursAgo = (ci * 3 + ti + 1) * 2
+        return {
+          userId: USER_ID,
+          matchId: `m-${ci}-${ti}`,
+          company,
+          role: `${title}, ${suffix}`,
+          location: wm === "Remote" ? "Remote (US)" : location,
+          workModel: wm,
+          salary: `$${salaryLow}k – $${salaryHigh}k + equity`,
+          score,
+          status: "New" as const,
+          postedAgo: hoursAgo < 24 ? `${hoursAgo}h ago` : `${Math.round(hoursAgo / 24)}d ago`,
+          breakdown: [
+            { label: "Compensation", met: salaryLow >= salaryFloor, note: `${salaryLow >= salaryFloor ? "Above" : "Below"} $${salaryFloor}k floor` },
+            { label: "Work model", met: wm !== "On-site" || !remoteOnly, note: wm },
+            { label: "Title match", met: true, note: `Matches target: ${title}` },
+            { label: "Anti-List", met: true, note: "No dealbreakers triggered" },
+            { label: "Seniority", met: score >= 88, note: score >= 88 ? "Strong fit" : "Stretch role" },
+          ],
+          coverLetter: `Dear ${company} Hiring Team,\n\nI've spent my career building products that make a real difference — and the ${role_label(title, suffix)} role at ${company} is exactly the kind of opportunity I've been targeting.\n\nI bring deep experience in ${suffix.toLowerCase()} product work, and I'd love to bring that to ${company}'s team.\n\nBest,\n${name}`,
+          updatedAt: new Date(),
+        }
+      })
+    )
+
+  if (seeds.length > 0) {
+    await db.collection<MatchDoc>("matches").insertMany(seeds)
+  }
+}
+
+function role_label(title: string, suffix: string) {
+  return `${title}, ${suffix}`
 }
 
 export async function updateMatchStatus(

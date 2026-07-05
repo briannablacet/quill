@@ -26,6 +26,7 @@ import { Separator } from '@/components/ui/separator'
 import { agents, topMatches, postIdeas } from '@/lib/cos-data'
 import type { ViewKey } from './app-sidebar'
 import { cn } from '@/lib/utils'
+import { regenerateMatches } from '@/lib/actions'
 
 const today = new Date().toLocaleDateString('en-US', {
   weekday: 'long',
@@ -99,9 +100,14 @@ function DailyDigest({ onNavigate, profileName }: { onNavigate: (v: ViewKey) => 
 
   const handleRegenerate = async () => {
     setRegenerating(true)
-    await new Promise((r) => setTimeout(r, 2000))
-    setRegenerating(false)
-    toast.success('Matches regenerated', { description: 'Your agents have re-scored all active listings.' })
+    try {
+      await regenerateMatches()
+      toast.success('Matches regenerated', { description: 'Your agents have re-scored all active listings based on your target roles.' })
+    } catch {
+      toast.error('Failed to regenerate matches')
+    } finally {
+      setRegenerating(false)
+    }
   }
 
   return (

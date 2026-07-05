@@ -56,7 +56,7 @@ export function Matches({ initialMatches }: MatchesProps) {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-foreground">
-            Matches &amp; Outreach
+            Matches &amp; Cover Letters
           </h1>
           <p className="text-sm text-muted-foreground">
             Every role that cleared your filters. Click any match for the full
