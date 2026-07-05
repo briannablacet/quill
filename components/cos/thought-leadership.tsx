@@ -57,7 +57,7 @@ function generatePostIdeas(titles: string[], companies: string[]): PostIdea[] {
     {
       id: 'tl-5',
       topic: 'AI & Product',
-      hook: 'AI won't replace ${roleShort}s. But it will replace certain habits.',
+      hook: `AI won\u2019t replace ${roleShort}s. But it will replace certain habits.`,
       body: `AI won't replace ${roleShort}s. But it will replace certain habits.\n\nSpecifically: the habit of making decisions slowly because synthesis takes time.\n\nThe teams I'm seeing win right now are using AI to compress the time between "here's the data" and "here's what we should do" — not to automate the decision, but to get to the hard conversation faster.\n\nThe ${roleShort}'s job isn't going away. The excuse of "I haven't had time to analyze it yet" is.\n\nHow are you using AI to change your decision-making process?`,
     },
     {
