@@ -51,8 +51,16 @@ function Slider({
       max={max}
       step={step}
       thumbAlignment="edge"
-      onValueChange={onValueChange}
-      onValueCommitted={onValueCommitted}
+      onValueChange={
+        onValueChange
+          ? (v) => onValueChange(Array.isArray(v) ? v : [v])
+          : undefined
+      }
+      onValueCommitted={
+        onValueCommitted
+          ? (v) => onValueCommitted(Array.isArray(v) ? v : [v])
+          : undefined
+      }
       {...props}
     >
       <SliderPrimitive.Control className="relative flex w-full touch-none items-center select-none data-disabled:opacity-50 data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col">
