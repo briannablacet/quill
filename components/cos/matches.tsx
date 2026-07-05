@@ -9,6 +9,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   MapPin,
   Wallet,
   ExternalLink,
@@ -439,33 +440,38 @@ function MatchDetail({
 
         {/* Resume selector + ATS check */}
         <Card className="p-6">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <h3 className="text-sm font-semibold text-foreground">Resume</h3>
-            {resumes.length > 0 && (
-              <div className="flex items-center gap-2">
-                {savingResume && <span className="text-xs text-muted-foreground">Saving...</span>}
+          <div className="mb-5">
+            <h3 className="mb-1 text-sm font-semibold text-foreground">Resume</h3>
+            <p className="text-xs text-muted-foreground">Choose which resume to use for this application. The ATS check below reflects the selected resume.</p>
+          </div>
+
+          {resumes.length > 0 ? (
+            <div className="mb-5 flex flex-wrap items-center gap-3">
+              <label htmlFor="resume-select" className="text-xs font-medium text-muted-foreground">Applying with</label>
+              <div className="relative">
                 <select
+                  id="resume-select"
                   value={selectedResumeId}
                   onChange={(e) => handleResumeChange(e.target.value)}
-                  className="rounded-md border border-border bg-background px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="h-9 appearance-none rounded-md border border-border bg-background pl-3 pr-8 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 >
                   {resumes.map((r) => (
                     <option key={r.id} value={r.id}>
-                      {r.label}{r.isDefault ? " (default)" : ""}
+                      {r.label || "Untitled resume"}{r.isDefault ? " (default)" : ""}
                     </option>
                   ))}
                 </select>
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
               </div>
-            )}
-          </div>
-          {activeResume ? (
-            <AtsChecklist resume={activeResume.text} match={match} />
+              {savingResume && <span className="text-xs text-muted-foreground">Saving...</span>}
+            </div>
           ) : (
-            <p className="text-xs text-muted-foreground">
-              No resume found. Add one in{" "}
-              <span className="font-medium text-foreground">Settings → Resume</span> to run the ATS check.
+            <p className="mb-4 text-xs text-muted-foreground">
+              No resumes found. Add one in <span className="font-medium text-foreground">Settings → Resumes</span>.
             </p>
           )}
+
+          {activeResume && <AtsChecklist resume={activeResume.text} match={match} />}
         </Card>
 
         {/* Cover letter */}
