@@ -80,7 +80,7 @@ export async function POST(_req: NextRequest) {
 
     const allJobs: RawJob[] = [...adzunaJobs, ...remotiveJobs]
     const newJobs = allJobs.filter((j) => !existingIds.has(j.sourceId))
-    console.log("[v0] Pipeline: fetched", allJobs.length, "jobs,", newJobs.length, "new")
+
 
     if (!newJobs.length) {
       await recordLastRun(db)
@@ -113,14 +113,14 @@ export async function POST(_req: NextRequest) {
 
         scored.push(result.match)
       } catch (err) {
-        console.log("[v0] Scoring error for", job.title, "@", job.company, err)
+
       }
 
       // Stop once we have enough
       if (scored.length >= dailyMatchLimit) break
     }
 
-    console.log("[v0] Pipeline:", scored.length, "matches passed scoring")
+
 
     // ------------------------------------------------------------------
     // 6. Generate cover letters
@@ -131,7 +131,7 @@ export async function POST(_req: NextRequest) {
         const letter = await generateCoverLetter(match, resumeForCoverLetter, userName)
         withLetters.push({ ...match, coverLetter: letter })
       } catch (err) {
-        console.log("[v0] Cover letter error for", match.role, "@", match.company, err)
+
         withLetters.push(match) // save without letter rather than skip
       }
     }
@@ -151,7 +151,7 @@ export async function POST(_req: NextRequest) {
       newFound: newJobs.length,
     })
   } catch (err) {
-    console.log("[v0] Pipeline fatal error:", err)
+
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Unknown error" },
       { status: 500 }
@@ -261,7 +261,7 @@ ${resumeText.slice(0, 800)}`,
 
 async function recordLastRun(db: Awaited<ReturnType<typeof getDb>>) {
   await db.collection<AgentDoc>("agents").updateOne(
-    { userId: USER_ID, type: "scraper" },
+    { userId: USER_ID, agentId: "scraper" },
     { $set: { lastRun: new Date(), updatedAt: new Date() } },
     { upsert: true }
   )
