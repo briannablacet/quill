@@ -624,7 +624,7 @@ function ResumesTab({ state, set, buildPayload }: TabProps) {
   )
 }
 
-function AgentsTab({ initialAgentConfigs }: { initialAgentConfigs: AgentDoc[] }) {
+export function AgentsTab({ initialAgentConfigs }: { initialAgentConfigs: AgentDoc[] }) {
   const [paused, setPaused] = useState<Record<AgentKey, boolean>>(() => {
     const map: Record<string, boolean> = {}
     for (const cfg of initialAgentConfigs) map[cfg.agentId] = !cfg.enabled
