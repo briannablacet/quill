@@ -123,7 +123,13 @@ export function Dashboard({ initialDirectives, initialAgentConfigs, initialMatch
               defaultTab={directivesTab}
             />
           )}
-          {view === "matches" && <Matches initialMatches={initialMatches} initialSelectedMatchId={selectedMatchId} onMatchSelected={() => setSelectedMatchId(undefined)} resumes={initialDirectives?.resumes ?? []} initialCoverLetters={initialCoverLetters} />}
+          {view === "matches" && <Matches initialMatches={initialMatches} initialSelectedMatchId={selectedMatchId} onMatchSelected={() => setSelectedMatchId(undefined)} resumes={
+              initialDirectives?.resumes?.length
+                ? initialDirectives.resumes
+                : initialDirectives?.resumeText
+                  ? [{ id: "default", label: "My Résumé", text: initialDirectives.resumeText, fileName: initialDirectives.resumeFileName ?? "", isDefault: true }]
+                  : []
+            } initialCoverLetters={initialCoverLetters} />}
           {view === "thought-leadership" && <ThoughtLeadership targetTitles={initialDirectives?.titles} targetCompanies={initialDirectives?.dreamCompanies} />}
           {view === "resumes" && <Resumes initialDirectives={initialDirectives} />}
           {view === "agents" && (
