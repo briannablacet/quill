@@ -82,9 +82,10 @@ export function Directives({ initialDirectives, initialAgentConfigs, defaultTab 
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-xl font-semibold text-foreground">Directives &amp; Criteria</h1>
+        <h1 className="text-xl font-semibold text-foreground">Settings</h1>
+        <p className="text-sm font-medium text-foreground/80">Configure your job search.</p>
         <p className="text-sm text-muted-foreground">
-          Configure your job search criteria, target companies, and profile for your agents.
+          Set up your profile, target roles, dream companies, and dealbreakers.
         </p>
       </div>
 
@@ -96,7 +97,7 @@ export function Directives({ initialDirectives, initialAgentConfigs, defaultTab 
           </TabsTrigger>
           <TabsTrigger value="targets">
             <Target data-icon="inline-start" />
-            Job Targets
+            Target Roles
           </TabsTrigger>
           <TabsTrigger value="companies">
             <Building2 data-icon="inline-start" />

@@ -13,8 +13,8 @@ import type { DirectivesDoc, AgentDoc, MatchDoc } from "@/lib/actions"
 const TITLES: Record<ViewKey, string> = {
   command: "Command Center",
   staff: "Staff Organization",
-  directives: "Directives & Criteria",
-  matches: "Matches & Outreach",
+  directives: "Settings",
+  matches: "Matches & Cover Letters",
 }
 
 interface DashboardProps {
