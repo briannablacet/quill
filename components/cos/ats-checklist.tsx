@@ -7,7 +7,7 @@ import { runAtsChecks, type AtsReport } from "@/lib/ats-checker"
 import type { MatchDoc } from "@/lib/actions"
 
 interface AtsChecklistProps {
-  coverLetter: string
+  resume: string
   match: MatchDoc
 }
 
@@ -23,12 +23,12 @@ function scoreBg(score: number) {
   return "bg-destructive/10 border-destructive/20"
 }
 
-export function AtsChecklist({ coverLetter, match }: AtsChecklistProps) {
+export function AtsChecklist({ resume, match }: AtsChecklistProps) {
   const [expanded, setExpanded] = useState(false)
 
   const report: AtsReport = useMemo(
-    () => runAtsChecks(coverLetter, match),
-    [coverLetter, match]
+    () => runAtsChecks(resume, match),
+    [resume, match]
   )
 
   const failed = report.checks.filter((c) => !c.pass)

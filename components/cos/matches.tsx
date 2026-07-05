@@ -276,7 +276,7 @@ function MatchDetail({
             </div>
           </div>
 
-          <AtsChecklist coverLetter={coverLetter} match={match} />
+
         </div>
       </div>
     )
@@ -415,6 +415,18 @@ function MatchDetail({
               </div>
             ))}
           </div>
+        </Card>
+
+        {/* Resume / ATS check */}
+        <Card className="p-6">
+          <h3 className="mb-4 text-sm font-semibold text-foreground">Resume ATS Check</h3>
+          <AtsChecklist resume={match.resumeText ?? ""} match={match} />
+          {!match.resumeText && (
+            <p className="mt-3 text-xs text-muted-foreground">
+              No resume text found. Paste your resume in{" "}
+              <span className="font-medium text-foreground">Settings</span> to run the ATS check.
+            </p>
+          )}
         </Card>
 
         {/* Cover letter */}
