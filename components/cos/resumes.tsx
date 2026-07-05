@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useTransition, useRef } from "react"
-import { Plus, X, FileText, UploadCloud, Loader2 } from "lucide-react"
+import { useState, useTransition, useMemo } from "react"
+import { Plus, X, FileText, UploadCloud, Loader2, Sparkles, ChevronDown, ChevronUp } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { saveDirectives, type DirectivesDoc, type ResumeEntry } from "@/lib/actions"
 import { parseResumeFile } from "@/lib/parse-resume"
+import { runResumeAtsChecks } from "@/lib/ats-checker"
 
 interface ResumesProps {
   initialDirectives: DirectivesDoc | null
@@ -25,7 +26,38 @@ export function Resumes({ initialDirectives }: ResumesProps) {
   })
 
   const [isPending, startTransition] = useTransition()
-  const [parsing, setParsing] = useState<string | null>(null) // resume id being parsed
+  const [parsing, setParsing] = useState<string | null>(null)
+  const [optimizing, setOptimizing] = useState<string | null>(null)
+  const [expandedChecks, setExpandedChecks] = useState<Set<string>>(new Set())
+
+  const handleOptimize = async (id: string, text: string) => {
+    const report = runResumeAtsChecks(text)
+    const issues = report.checks.filter((c) => !c.pass).map((c) => c.detail)
+    setOptimizing(id)
+    try {
+      const res = await fetch("/api/resume/optimize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resumeText: text, issues }),
+      })
+      if (!res.ok) throw new Error("Optimization failed")
+      const { optimizedText } = await res.json()
+      setResumes((prev) => prev.map((r) => r.id === id ? { ...r, text: optimizedText } : r))
+      toast.success("Resume optimized for ATS")
+    } catch {
+      toast.error("Could not optimize resume")
+    } finally {
+      setOptimizing(null)
+    }
+  }
+
+  const toggleChecks = (id: string) => {
+    setExpandedChecks((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
 
   const handleFileUpload = async (id: string, file: File) => {
     setParsing(id)
@@ -196,6 +228,60 @@ export function Resumes({ initialDirectives }: ResumesProps) {
                 className="min-h-56 resize-y font-mono text-xs leading-relaxed"
               />
               <p className="text-xs text-muted-foreground tabular-nums">{resume.text.length.toLocaleString()} characters</p>
+
+              {/* ATS score row */}
+              {resume.text.trim().length > 0 && (() => {
+                const report = runResumeAtsChecks(resume.text)
+                const failCount = report.checks.filter((c) => !c.pass).length
+                const scoreColor = report.score >= 80 ? "text-success" : report.score >= 50 ? "text-warning" : "text-destructive"
+                const isExpanded = expandedChecks.has(resume.id)
+                return (
+                  <div className="flex flex-col gap-2 rounded-lg border border-border bg-accent/20 px-4 py-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-medium text-muted-foreground">ATS Score</span>
+                        <span className={`text-sm font-bold tabular-nums ${scoreColor}`}>{report.score}/100</span>
+                        {failCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => toggleChecks(resume.id)}
+                            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                          >
+                            {failCount} issue{failCount !== 1 ? "s" : ""}
+                            {isExpanded ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
+                          </button>
+                        )}
+                        {failCount === 0 && <span className="text-xs text-success">All checks passed</span>}
+                      </div>
+                      {failCount > 0 && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={optimizing === resume.id}
+                          onClick={() => handleOptimize(resume.id, resume.text)}
+                        >
+                          {optimizing === resume.id
+                            ? <><Loader2 className="size-3 animate-spin" data-icon="inline-start" />Optimizing...</>
+                            : <><Sparkles className="size-3" data-icon="inline-start" />Optimize for ATS</>
+                          }
+                        </Button>
+                      )}
+                    </div>
+                    {isExpanded && (
+                      <ul className="flex flex-col gap-1.5 pt-1">
+                        {report.checks.filter((c) => !c.pass).map((c) => (
+                          <li key={c.id} className="flex gap-2 text-xs text-muted-foreground">
+                            <span className={c.severity === "error" ? "text-destructive" : "text-warning"}>
+                              {c.severity === "error" ? "✗" : "!"}
+                            </span>
+                            <span><span className="font-medium text-foreground">{c.label}:</span> {c.detail}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )
+              })()}
             </div>
           ))}
 

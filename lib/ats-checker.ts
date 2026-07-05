@@ -43,6 +43,24 @@ function extractKeywords(text: string): Set<string> {
   )
 }
 
+/**
+ * Run ATS checks against a resume without a job description.
+ * Skips keyword-overlap and role-mention checks.
+ */
+export function runResumeAtsChecks(resume: string): AtsReport {
+  const stub = {
+    matchId: "", userId: "", company: "", role: "", location: "",
+    workModel: "Remote" as const, salary: "", score: 0, status: "New" as const,
+    postedAgo: "", breakdown: [], coverLetter: "", updatedAt: new Date(),
+  }
+  const report = runAtsChecks(resume, stub)
+  // Filter out job-specific checks that require a real match
+  return {
+    ...report,
+    checks: report.checks.filter((c) => c.id !== "keyword-overlap" && c.id !== "role-mentioned"),
+  }
+}
+
 export function runAtsChecks(resume: string, match: MatchDoc): AtsReport {
   const text = resume.trim()
   const textLower = text.toLowerCase()
