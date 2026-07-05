@@ -15,7 +15,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server"
-import { generateText, generateObject } from "ai"
+import { generateText, generateObject, zodSchema } from "ai"
 import { z } from "zod"
 import { getDb } from "@/lib/mongodb"
 import { fetchAdzunaJobs, fetchRemotiveJobs, type RawJob } from "@/lib/job-fetcher"
@@ -203,9 +203,12 @@ ${job.description.slice(0, 1500)}
 
 Score this match 0-100. Be strict — 70+ means genuinely good fit. Provide 3-5 specific breakdown criteria.`
 
+  // Small delay to avoid rate-limiting when processing multiple jobs
+  await new Promise((r) => setTimeout(r, 500))
+
   const { object } = await generateObject({
     model: "openai/gpt-4.1-mini",
-    schema: ScoreSchema,
+    schema: zodSchema(ScoreSchema),
     prompt,
   })
 
@@ -242,6 +245,7 @@ async function generateCoverLetter(
   resumeText: string,
   userName: string
 ): Promise<string> {
+  await new Promise((r) => setTimeout(r, 500))
   const { text } = await generateText({
     model: "openai/gpt-4.1-mini",
     system: `You write concise, compelling cover letters. Three short paragraphs maximum. 
