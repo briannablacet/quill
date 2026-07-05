@@ -16,10 +16,6 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 interface DirectivesState {
   name: string
   headline: string
@@ -39,10 +35,6 @@ interface DirectivesProps {
   initialDirectives: DirectivesDoc | null
   defaultTab?: string
 }
-
-// ---------------------------------------------------------------------------
-// Root component
-// ---------------------------------------------------------------------------
 
 export function Directives({ initialDirectives, defaultTab }: DirectivesProps) {
   const d = initialDirectives
@@ -121,19 +113,11 @@ export function Directives({ initialDirectives, defaultTab }: DirectivesProps) {
   )
 }
 
-// ---------------------------------------------------------------------------
-// Shared tab props
-// ---------------------------------------------------------------------------
-
 interface TabProps {
   state: DirectivesState
   set: <K extends keyof DirectivesState>(key: K, value: DirectivesState[K]) => void
   buildPayload: () => Omit<DirectivesDoc, "_id" | "userId" | "updatedAt">
 }
-
-// ---------------------------------------------------------------------------
-// Job Targets tab
-// ---------------------------------------------------------------------------
 
 function JobTargetsTab({ state, set, buildPayload }: TabProps) {
   const [isPending, startTransition] = useTransition()
@@ -216,10 +200,6 @@ function JobTargetsTab({ state, set, buildPayload }: TabProps) {
   )
 }
 
-// ---------------------------------------------------------------------------
-// Settings tab (companies + dealbreakers)
-// ---------------------------------------------------------------------------
-
 function DealbreakersTab({ state, set, buildPayload }: TabProps) {
   const [isPending, startTransition] = useTransition()
 
@@ -280,10 +260,6 @@ function DealbreakersTab({ state, set, buildPayload }: TabProps) {
     </div>
   )
 }
-
-// ---------------------------------------------------------------------------
-// Resume & Profile tab
-// ---------------------------------------------------------------------------
 
 function ResumeTab({ state, set, buildPayload }: TabProps) {
   const [isPending, startTransition] = useTransition()
@@ -419,16 +395,12 @@ function ResumeTab({ state, set, buildPayload }: TabProps) {
   )
 }
 
-// ---------------------------------------------------------------------------
-// TagInput
-// ---------------------------------------------------------------------------
-
 function TagInput({ tags, onChange, placeholder, tone, icon: Icon }: {
   tags: string[]
   onChange: (tags: string[]) => void
   placeholder: string
   tone: "primary" | "destructive"
-  icon: typeof X
+  icon: React.ElementType
 }) {
   const [value, setValue] = useState("")
 
