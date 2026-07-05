@@ -4,7 +4,6 @@ import { useState } from "react"
 import { Menu, Bell, Search } from "lucide-react"
 import { AppSidebar, type ViewKey } from "@/components/cos/app-sidebar"
 import { CommandCenter } from "@/components/cos/command-center"
-import { StaffOrganization } from "@/components/cos/staff-organization"
 import { Directives } from "@/components/cos/directives"
 import { Matches } from "@/components/cos/matches"
 import { Button } from "@/components/ui/button"
@@ -104,12 +103,10 @@ export function Dashboard({ initialDirectives, initialAgentConfigs, initialMatch
 
         <main className="mx-auto w-full max-w-6xl flex-1 p-4 md:p-6">
           {view === "command" && <CommandCenter onNavigate={navigate} />}
-          {view === "staff" && (
-            <StaffOrganization initialAgentConfigs={initialAgentConfigs} />
-          )}
           {view === "directives" && (
             <Directives
               initialDirectives={initialDirectives}
+              initialAgentConfigs={initialAgentConfigs}
               defaultTab={directivesTab}
             />
           )}

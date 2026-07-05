@@ -16,7 +16,6 @@ export type ViewKey = 'command' | 'staff' | 'directives' | 'matches'
 const NAV: { key: ViewKey; label: string; sub: string; icon: typeof Inbox }[] = [
   { key: 'directives', label: 'Settings', sub: 'Configuration', icon: SlidersHorizontal },
   { key: 'command', label: 'Command Center', sub: 'Daily digest', icon: LayoutDashboard },
-  { key: 'staff', label: 'Staff Organization', sub: 'Agent profiles', icon: UsersRound },
   { key: 'matches', label: 'Matches & Cover Letters', sub: 'Output archive', icon: Inbox },
 ]
 
