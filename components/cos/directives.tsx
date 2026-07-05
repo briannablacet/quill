@@ -30,6 +30,7 @@ import {
   FieldDescription,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Slider } from "@/components/ui/slider"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -54,6 +55,7 @@ interface DirectivesState {
   resumeText: string
   resumeFileName: string
   linkedinUrl: string
+  defaultCoverLetter: string
 }
 
 export function Directives({ initialDirectives, defaultTab }: DirectivesProps) {
@@ -72,6 +74,7 @@ export function Directives({ initialDirectives, defaultTab }: DirectivesProps) {
     resumeText: d?.resumeText ?? "",
     resumeFileName: d?.resumeFileName ?? "",
     linkedinUrl: d?.linkedinUrl ?? "",
+    defaultCoverLetter: d?.defaultCoverLetter ?? "",
   })
 
   const set = <K extends keyof DirectivesState>(key: K, value: DirectivesState[K]) =>
@@ -90,6 +93,7 @@ export function Directives({ initialDirectives, defaultTab }: DirectivesProps) {
     resumeText: state.resumeText,
     resumeFileName: state.resumeFileName,
     linkedinUrl: state.linkedinUrl,
+    defaultCoverLetter: state.defaultCoverLetter,
   })
 
   return (
@@ -458,11 +462,63 @@ function ResumeTab({ state, set, buildPayload }: TabProps) {
                 </div>
               )}
             </Field>
+          </FieldGroup>
+        </CardContent>
+      </Card>
+
+      {/* Default cover letter */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <span className="flex size-8 items-center justify-center rounded-lg bg-primary/15 text-primary">
+              <FileText className="size-4" />
+            </span>
+            <div>
+              <CardTitle className="text-base">Default Cover Letter</CardTitle>
+              <CardDescription>
+                Your Ghostwriter Agent uses this as the base template, then tailors
+                each variation to the specific role, company, and hiring manager.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <FieldGroup>
+            <Field>
+              <FieldLabel htmlFor="cover-letter">Base template</FieldLabel>
+              <Textarea
+                id="cover-letter"
+                placeholder={`Dear Hiring Manager,\n\nI'm excited to apply for the [Role] position at [Company]...\n\nWrite your base letter here. Your agents will substitute [Role], [Company], and [Hiring Manager] automatically and adjust the tone to match each job description.`}
+                className="min-h-72 resize-y font-mono text-sm leading-relaxed"
+                value={state.defaultCoverLetter}
+                onChange={(e) => set("defaultCoverLetter", e.target.value)}
+              />
+              <FieldDescription className="flex items-center justify-between">
+                <span>
+                  Use <code className="rounded bg-accent px-1 py-0.5 text-xs">[Role]</code>,{" "}
+                  <code className="rounded bg-accent px-1 py-0.5 text-xs">[Company]</code>, and{" "}
+                  <code className="rounded bg-accent px-1 py-0.5 text-xs">[Hiring Manager]</code>{" "}
+                  as placeholders — your agents will fill them in.
+                </span>
+                <span className="ml-4 shrink-0 tabular-nums text-muted-foreground">
+                  {state.defaultCoverLetter.length} chars
+                </span>
+              </FieldDescription>
+            </Field>
 
             <Field orientation="horizontal">
               <Button onClick={save} disabled={isPending}>
                 {isPending ? "Saving..." : "Save profile"}
               </Button>
+              {state.defaultCoverLetter.length > 0 && (
+                <Button
+                  variant="ghost"
+                  className="text-muted-foreground"
+                  onClick={() => set("defaultCoverLetter", "")}
+                >
+                  Clear
+                </Button>
+              )}
             </Field>
           </FieldGroup>
         </CardContent>
