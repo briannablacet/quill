@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { Target, Ban, FileText, Building2, MapPin, Link2, Plus, X, UploadCloud, User, Terminal } from "lucide-react"
+import { Target, Ban, FileText, Building2, MapPin, Link2, Plus, X, UploadCloud, User, Terminal, Play, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { saveDirectives, saveAgentConfig } from "@/lib/actions"
@@ -636,6 +636,12 @@ export function AgentsTab({ initialAgentConfigs }: { initialAgentConfigs: AgentD
     }
   })
   const [pending, startTransition] = useTransition()
+  const [running, setRunning] = useState(false)
+  const [lastRun, setLastRun] = useState<Date | null>(() => {
+    const cfg = initialAgentConfigs.find((c) => c.agentId === "scraper")
+    return cfg?.lastRun ? new Date(cfg.lastRun) : null
+  })
+  const [runResult, setRunResult] = useState<string | null>(null)
 
   const toggle = (key: AgentKey, name: string) => {
     const nextPaused = !paused[key]
@@ -651,11 +657,30 @@ export function AgentsTab({ initialAgentConfigs }: { initialAgentConfigs: AgentD
     })
   }
 
+  const runNow = async () => {
+    setRunning(true)
+    setRunResult(null)
+    try {
+      const res = await fetch("/api/jobs/run", { method: "POST" })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? "Pipeline failed")
+      const now = new Date()
+      setLastRun(now)
+      setRunResult(`Found ${data.saved} new match${data.saved !== 1 ? "es" : ""}`)
+      toast.success(`Pipeline complete — ${data.saved} new match${data.saved !== 1 ? "es" : ""} saved`)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Pipeline failed")
+    } finally {
+      setRunning(false)
+    }
+  }
+
   return (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
       {agents.map((agent) => {
         const Icon = agent.icon
         const isPaused = paused[agent.key]
+        const isScraper = agent.key === "scraper"
         return (
           <Card key={agent.key}>
             <CardHeader>
@@ -698,6 +723,40 @@ export function AgentsTab({ initialAgentConfigs }: { initialAgentConfigs: AgentD
                 </div>
                 <Progress value={agent.accuracy} />
               </div>
+
+              {/* Run Now — only on the scraper card */}
+              {isScraper && (
+                <>
+                  <Separator />
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-xs font-medium text-foreground">Run pipeline now</span>
+                      <span className="text-xs text-muted-foreground">
+                        {running
+                          ? "Fetching jobs, scoring matches, writing cover letters..."
+                          : runResult
+                            ? runResult
+                            : lastRun
+                              ? `Last run ${formatLastRun(lastRun)}`
+                              : "Never run — click to fetch your first matches"}
+                      </span>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={running}
+                      onClick={runNow}
+                      className="shrink-0"
+                    >
+                      {running
+                        ? <><Loader2 className="size-3.5 animate-spin" data-icon="inline-start" />Running...</>
+                        : <><Play className="size-3.5" data-icon="inline-start" />Run now</>
+                      }
+                    </Button>
+                  </div>
+                </>
+              )}
+
               <Separator />
               <div className="flex items-center justify-between rounded-lg bg-secondary/40 px-3 py-2.5">
                 <Label htmlFor={`toggle-${agent.key}`} className="flex flex-col gap-0.5">
@@ -717,6 +776,16 @@ export function AgentsTab({ initialAgentConfigs }: { initialAgentConfigs: AgentD
       })}
     </div>
   )
+}
+
+function formatLastRun(date: Date): string {
+  const diff = Date.now() - date.getTime()
+  const mins = Math.floor(diff / 60_000)
+  if (mins < 1) return "just now"
+  if (mins < 60) return `${mins}m ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h ago`
+  return `${Math.floor(hours / 24)}d ago`
 }
 
 function TagInput({ tags, onChange, placeholder, tone, icon: Icon }: {

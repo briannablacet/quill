@@ -74,8 +74,10 @@ export type AgentDoc = {
   _id?: string
   userId: string
   agentId: string
+  type?: string       // "scraper" | "scorer" | etc — used by pipeline to record lastRun
   enabled: boolean
   systemPrompt: string
+  lastRun?: Date
   updatedAt: Date
 }
 
