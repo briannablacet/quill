@@ -14,7 +14,17 @@ import {
   ExternalLink,
   RefreshCw,
   PenLine,
+  Building2,
+  Briefcase,
+  Clock,
 } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
+import { Textarea } from "@/components/ui/textarea"
+import { updateMatchStatus, regenerateMatches, saveCoverLetter, type MatchDoc } from "@/lib/actions"
 
 interface MatchesProps {
   initialMatches: MatchDoc[]
