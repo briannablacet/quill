@@ -195,7 +195,9 @@ async function seedMatchesFromDirectives(db: Awaited<ReturnType<typeof getDb>>) 
     : ["Linear", "Vercel", "Notion"]
 
   const location = directives?.locations?.[0] ?? "Remote (US)"
-  const salaryMin = directives?.salaryMin ?? 150000
+  // salary is stored as [low, high] array of $k values (e.g. [190, 270])
+  const salaryArr = Array.isArray(directives?.salary) ? directives.salary as number[] : null
+  const salaryFloor = salaryArr?.[0] ?? 190
   const remoteOnly = directives?.remoteOnly ?? false
   const name = directives?.name ?? "there"
 
@@ -211,8 +213,6 @@ async function seedMatchesFromDirectives(db: Awaited<ReturnType<typeof getDb>>) 
     "AI",
     "Enterprise",
   ]
-
-  const salaryFloor = Math.round(salaryMin / 1000)
 
   const seeds: Omit<MatchDoc, "_id">[] = dreamCompanies
     .slice(0, 6)

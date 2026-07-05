@@ -277,25 +277,26 @@ function MatchDetail({
           </span>
         </div>
 
-        <Separator className="my-4" />
-        <div className="flex flex-wrap items-center gap-3">
-          <Button asChild>
-            <a
-              href={match.jobUrl ?? `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(match.role)}&company=${encodeURIComponent(match.company)}&f_TPR=r604800`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <ExternalLink data-icon="inline-start" />
-              Find &amp; apply on LinkedIn
-            </a>
-          </Button>
-          <p className="text-xs text-muted-foreground">
-            {match.jobUrl
-              ? "Opens the job listing directly."
-              : `Opens a LinkedIn search for "${match.role}" at ${match.company}. Direct links will be added by the scraper agent.`}
-          </p>
-        </div>
       </Card>
+
+      {/* Apply row — outside the hero card for breathing room */}
+      <div className="flex flex-wrap items-center gap-3 px-1">
+        <Button asChild size="lg">
+          <a
+            href={match.jobUrl ?? `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(match.role)}&company=${encodeURIComponent(match.company)}&f_TPR=r604800`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <ExternalLink data-icon="inline-start" />
+            Find &amp; apply on LinkedIn
+          </a>
+        </Button>
+        <p className="text-sm text-muted-foreground">
+          {match.jobUrl
+            ? "Opens the job listing directly."
+            : `Searches LinkedIn for "${match.role}" at ${match.company}. Direct links will be added by the scraper agent.`}
+        </p>
+      </div>
 
       {/* Job req content */}
       {match.jobReqContent && (
