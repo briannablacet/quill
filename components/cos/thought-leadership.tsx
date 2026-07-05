@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { Copy, Check, RefreshCw, PenLine, ArrowLeft } from 'lucide-react'
+import { Copy, Check, RefreshCw, PenLine, ArrowLeft, CheckCircle2, XCircle } from 'lucide-react'
 import {
   Card,
   CardContent,
@@ -28,12 +28,15 @@ function generatePostIdeas(titles: string[], companies: string[]): PostIdea[] {
   const secondCompany = companies[1] ?? companies[0] ?? 'fast-growing startups'
   const roleShort = primaryTitle.replace(/^(Senior |Staff |Principal |Group |Lead )/, '')
 
+  // "a" vs "an" helper
+  const article = (s: string) => /^[aeiou]/i.test(s) ? 'an' : 'a'
+
   return [
     {
       id: 'tl-1',
-      topic: `${roleShort} Strategy`,
-      hook: `The hardest part of being a ${primaryTitle} isn\u2019t the roadmap.`,
-      body: `The hardest part of being a ${primaryTitle} isn\u2019t the roadmap.\n\nIt\u2019s the 40 conversations that have to happen before a single line gets written.\n\nAlignment is the product. The roadmap is just proof you achieved it.\n\n3 things I do before I touch a planning doc:\n1. Talk to the engineer who\u2019ll build it first\n2. Find the stakeholder most likely to say no \u2014 and go there second\n3. Ask: what would have to be true for this to be obviously wrong?\n\nWhat\u2019s your pre-roadmap ritual?`,
+      topic: `${primaryTitle} Strategy`,
+      hook: `The hardest part of being ${article(primaryTitle)} ${primaryTitle} isn\u2019t the roadmap.`,
+      body: `The hardest part of being ${article(primaryTitle)} ${primaryTitle} isn\u2019t the roadmap.\n\nIt\u2019s the 40 conversations that have to happen before a single line gets written.\n\nAlignment is the product. The roadmap is just proof you achieved it.\n\n3 things I do before I touch a planning doc:\n1. Talk to the engineer who\u2019ll build it first\n2. Find the stakeholder most likely to say no \u2014 and go there second\n3. Ask: what would have to be true for this to be obviously wrong?\n\nWhat\u2019s your pre-roadmap ritual?`,
     },
     {
       id: 'tl-2',
@@ -56,8 +59,8 @@ function generatePostIdeas(titles: string[], companies: string[]): PostIdea[] {
     {
       id: 'tl-5',
       topic: 'AI & Product',
-      hook: `AI won\u2019t replace ${roleShort}s. But it will replace certain habits.`,
-      body: `AI won\u2019t replace ${roleShort}s. But it will replace certain habits.\n\nSpecifically: the habit of making decisions slowly because synthesis takes time.\n\nThe teams I\u2019m seeing win right now are using AI to compress the time between \u201chere\u2019s the data\u201d and \u201chere\u2019s what we should do\u201d \u2014 not to automate the decision, but to get to the hard conversation faster.\n\nThe ${roleShort}\u2019s job isn\u2019t going away. The excuse of \u201cI haven\u2019t had time to analyze it yet\u201d is.\n\nHow are you using AI to change your decision-making process?`,
+      hook: `AI won\u2019t replace ${primaryTitle}s. But it will replace certain habits.`,
+      body: `AI won\u2019t replace ${primaryTitle}s. But it will replace certain habits.\n\nSpecifically: the habit of making decisions slowly because synthesis takes time.\n\nThe teams I\u2019m seeing win right now are using AI to compress the time between \u201chere\u2019s the data\u201d and \u201chere\u2019s what we should do\u201d \u2014 not to automate the decision, but to get to the hard conversation faster.\n\nThe ${primaryTitle}\u2019s job isn\u2019t going away. The excuse of \u201cI haven\u2019t had time to analyze it yet\u201d is.\n\nHow are you using AI to change your decision-making process?`,
     },
     {
       id: 'tl-6',
@@ -236,14 +239,49 @@ function PostEditor({
         </div>
       </div>
 
-      {/* Tips */}
+      {/* Tips — live checklist */}
       <div className="rounded-lg border border-border bg-secondary/40 p-4">
-        <p className="mb-2 text-xs font-medium text-foreground">LinkedIn post tips</p>
-        <ul className="flex flex-col gap-1 text-xs text-muted-foreground">
-          <li>Aim for 1,300 characters or fewer for maximum reach.</li>
-          <li>Line breaks matter — white space increases engagement.</li>
-          <li>End with a question to drive comments.</li>
-          <li>Post Tuesday–Thursday between 8–10am for best visibility.</li>
+        <p className="mb-3 text-xs font-medium text-foreground">LinkedIn post tips</p>
+        <ul className="flex flex-col gap-2">
+          {[
+            {
+              label: `Character count: ${body.length} / 1,300`,
+              pass: body.length <= 1300,
+              failNote: `${body.length - 1300} chars over — trim for maximum reach.`,
+              passNote: 'Good length for maximum reach.',
+            },
+            {
+              label: 'Has line breaks for white space',
+              pass: (body.match(/\n/g) ?? []).length >= 3,
+              failNote: 'Add more line breaks — white space increases engagement.',
+              passNote: 'Good use of white space.',
+            },
+            {
+              label: 'Ends with a question',
+              pass: /\?\s*$/.test(body.trim()),
+              failNote: 'End with a question to drive comments.',
+              passNote: 'Ends with a question — great for comments.',
+            },
+            {
+              label: 'Best posting window: Tue–Thu, 8–10am',
+              pass: null,
+              failNote: '',
+              passNote: '',
+            },
+          ].map(({ label, pass, failNote, passNote }) => (
+            <li key={label} className="flex items-start gap-2 text-xs">
+              {pass === null ? (
+                <span className="mt-0.5 size-4 shrink-0 rounded-full border border-border" />
+              ) : pass ? (
+                <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-success" />
+              ) : (
+                <XCircle className="mt-0.5 size-4 shrink-0 text-warning" />
+              )}
+              <span className={pass === null ? 'text-muted-foreground' : pass ? 'text-success' : 'text-warning'}>
+                {pass === null ? label : pass ? passNote : failNote}
+              </span>
+            </li>
+          ))}
         </ul>
       </div>
     </div>
