@@ -17,7 +17,7 @@ const TITLES: Record<ViewKey, string> = {
   directives: "Settings",
   matches: "Matches & Cover Letters",
   "thought-leadership": "Thought Leadership",
-  agents: "Agent Settings",
+  agents: "Agent Setup",
 }
 
 interface DashboardProps {
