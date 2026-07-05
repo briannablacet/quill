@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { updateMatchStatus, regenerateMatches, saveCoverLetter, saveResumeForMatch, saveCoverLetterToLibrary, saveResumeEntry, type MatchDoc, type ResumeEntry, type CoverLetterEntry } from "@/lib/actions"
+import { updateMatchStatus, saveCoverLetter, saveResumeForMatch, saveCoverLetterToLibrary, saveResumeEntry, type MatchDoc, type ResumeEntry, type CoverLetterEntry } from "@/lib/actions"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AtsChecklist } from "@/components/cos/ats-checklist"
 import { CoverLetterLibrary } from "@/components/cos/cover-letter-library"
@@ -51,29 +51,12 @@ export function Matches({ initialMatches, initialSelectedMatchId, onMatchSelecte
   const [selected, setSelected] = useState<MatchDoc | null>(
     initialSelectedMatchId ? (initialMatches.find((m) => m.matchId === initialSelectedMatchId) ?? null) : null
   )
-  const [regenerating, setRegenerating] = useState(false)
-
   const handleStatusChange = (matchId: string, status: MatchDoc["status"]) => {
     setMatches((prev) =>
       prev.map((m) => (m.matchId === matchId ? { ...m, status } : m))
     )
     if (selected?.matchId === matchId) {
       setSelected((prev) => (prev ? { ...prev, status } : prev))
-    }
-  }
-
-  const handleRegenerate = async () => {
-    setRegenerating(true)
-    try {
-      await regenerateMatches()
-      toast.success("Matches regenerated", {
-        description: "Re-scored against your latest target roles.",
-      })
-      window.location.reload()
-    } catch {
-      toast.error("Failed to regenerate matches")
-    } finally {
-      setRegenerating(false)
     }
   }
 
@@ -138,11 +121,10 @@ export function Matches({ initialMatches, initialSelectedMatchId, onMatchSelecte
           <Button
             size="sm"
             variant="outline"
-            disabled={regenerating}
-            onClick={handleRegenerate}
+            onClick={() => window.location.reload()}
           >
-            <RefreshCw data-icon="inline-start" className={regenerating ? "animate-spin" : ""} />
-            {regenerating ? "Regenerating..." : "Regenerate Matches"}
+            <RefreshCw data-icon="inline-start" />
+            Refresh
           </Button>
         </div>
       </div>
