@@ -44,11 +44,15 @@ export function CommandCenter({ onNavigate, onNavigateToMatch, profileName, init
         <Card className="divide-y divide-border py-0">
           {agents.map((agent) => {
             const Icon = agent.icon
+            const agentView: ViewKey =
+              agent.key === 'thought' ? 'thought-leadership'
+              : agent.key === 'scraper' || agent.key === 'scorer' ? 'matches'
+              : 'agents'
             return (
               <button
                 key={agent.key}
                 type="button"
-                onClick={() => onNavigate('directives')}
+                onClick={() => onNavigate(agentView)}
                 className="flex w-full items-center gap-4 px-4 py-3.5 text-left transition-colors hover:bg-accent/40"
               >
                 <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent text-primary">
