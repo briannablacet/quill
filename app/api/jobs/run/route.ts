@@ -46,11 +46,15 @@ export async function POST(_req: NextRequest) {
       salaryMin = 0,
       dealbreakers = [],
       dailyMatchLimit = 10,
-      minMatchScore = 30,
+      minMatchScore: rawMinScore = 30,
       resumeText = "",
       resumes = [],
       name: userName = "the applicant",
     } = directives
+
+    // Cap at 50 — keyword scoring tops out lower than LLM scoring,
+    // so user-set values of 70+ would filter everything out
+    const minMatchScore = Math.min(rawMinScore, 50)
 
     if (!titles.length) {
       return NextResponse.json({ error: "No target titles configured" }, { status: 400 })
