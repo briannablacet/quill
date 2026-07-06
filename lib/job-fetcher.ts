@@ -54,13 +54,14 @@ export async function fetchAdzunaJobs(
 
   for (const title of titles.slice(0, 5)) {
     try {
+      // Don't pass &where — location filtering happens in the scorer.
+      // Passing a city filter here returns 0 results for niche titles.
       const query = encodeURIComponent(remoteOnly ? `${title} remote` : title)
-      const where = locations[0] ? `&where=${encodeURIComponent(locations[0])}` : ""
       const url =
         `https://api.adzuna.com/v1/api/jobs/us/search/1` +
         `?app_id=${appId}&app_key=${appKey}` +
         `&results_per_page=${perTitle}` +
-        `&what=${query}${where}` +
+        `&what=${query}` +
         `&content-type=application/json`
 
       const res = await fetch(url, { next: { revalidate: 0 } })
