@@ -80,7 +80,13 @@ export async function POST(_req: NextRequest) {
     const adzunaJobs = await fetchAdzunaJobs(titles, locations, remoteOnly, 40)
     const remotiveJobs: RawJob[] = []
 
-    const allJobs: RawJob[] = [...adzunaJobs, ...remotiveJobs]
+    // Deduplicate within the current batch first (same job from multiple title searches)
+    const seenInBatch = new Set<string>()
+    const allJobs: RawJob[] = [...adzunaJobs, ...remotiveJobs].filter((j) => {
+      if (seenInBatch.has(j.sourceId)) return false
+      seenInBatch.add(j.sourceId)
+      return true
+    })
     const newJobs = allJobs.filter((j) => !existingIds.has(j.sourceId))
 
     if (!newJobs.length) {
@@ -129,7 +135,7 @@ export async function POST(_req: NextRequest) {
         withLetters.push(match) // save without letter rather than skip entirely
       }
       // Respect rate limits between cover letter calls
-      await new Promise((r) => setTimeout(r, 1500))
+      await new Promise((r) => setTimeout(r, 2500))
     }
 
     // ------------------------------------------------------------------

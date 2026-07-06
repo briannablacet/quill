@@ -70,10 +70,12 @@ Return ONLY valid JSON, no markdown, no explanation.`
         ? parsed.workModel
         : "On-site") as MatchDoc["workModel"]
       salary = parsed.salary || ""
-    } catch {
-      // AI parse failed — save with raw title, still useful
+    } catch (parseErr) {
+      console.error("[import-job] AI parse failed:", parseErr)
       role = title
     }
+
+    console.log("[import-job] AI_GATEWAY_API_KEY set:", !!process.env.AI_GATEWAY_API_KEY, "| role:", role, "| company:", company)
 
     const db = await getDb()
 
@@ -105,8 +107,8 @@ Candidate résumé:
 ${resumeText.slice(0, 800)}`,
         })
         coverLetter = cl
-      } catch {
-        // Cover letter generation failed — save without it, user can regenerate
+      } catch (clErr) {
+        console.error("[import-job] Cover letter generation failed:", clErr)
       }
     }
 
