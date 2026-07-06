@@ -277,13 +277,14 @@ export async function getMatches(): Promise<MatchDoc[]> {
   }
 }
 
-export async function regenerateMatches(): Promise<void> {
-  // Build absolute URL — required when calling fetch from a Server Action
-  const base =
-    process.env.NEXT_PUBLIC_APP_URL ??
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
-  await fetch(`${base}/api/jobs/run`, { method: "POST" })
+export async function regenerateMatches(): Promise<{ saved: number; message?: string }> {
+  // Call the pipeline directly — never use fetch() with a relative URL in a
+  // Server Action; it throws ERR_INVALID_URL because there is no base URL.
+  const { runJobPipeline } = await import("@/app/api/jobs/run/pipeline")
+  const result = await runJobPipeline()
   revalidatePath("/")
+  revalidatePath("/matches")
+  return result
 }
 
 function buildCoverLetter({
