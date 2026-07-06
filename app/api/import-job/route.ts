@@ -18,6 +18,19 @@ const BOOKMARKLET_SECRET = process.env.BOOKMARKLET_SECRET ?? "cos-import"
 
 export const maxDuration = 60
 
+// CORS headers — required because the bookmarklet fires fetch() from third-party
+// pages (linkedin.com, greenhouse.io, etc.) cross-origin to this endpoint.
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+}
+
+// Handle preflight OPTIONS request sent by browsers before cross-origin POST
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS_HEADERS })
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -29,11 +42,11 @@ export async function POST(req: NextRequest) {
     }
 
     if (secret !== BOOKMARKLET_SECRET) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: CORS_HEADERS })
     }
 
     if (!url) {
-      return NextResponse.json({ error: "url is required" }, { status: 400 })
+      return NextResponse.json({ error: "url is required" }, { status: 400, headers: CORS_HEADERS })
     }
 
     // Use AI to parse job details from the page content
@@ -164,9 +177,9 @@ ${resumeText.slice(0, 800)}`
       updatedAt: new Date(),
     })
 
-    return NextResponse.json({ ok: true, role, company, hasCoverLetter: !!coverLetter })
+    return NextResponse.json({ ok: true, role, company, hasCoverLetter: !!coverLetter }, { headers: CORS_HEADERS })
   } catch (err) {
     console.error("[import-job]", err)
-    return NextResponse.json({ error: "Internal error" }, { status: 500 })
+    return NextResponse.json({ error: "Internal error" }, { status: 500, headers: CORS_HEADERS })
   }
 }
