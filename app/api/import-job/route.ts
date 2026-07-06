@@ -129,7 +129,14 @@ ${resumeText.slice(0, 800)}`
           system,
           prompt,
         })
+        // Guaranteed literal replacement of any remaining placeholders
         coverLetter = cl
+          .replace(/\[Company\]/gi, company)
+          .replace(/\[Role\]/gi, role)
+          .replace(/\[Name\]/gi, userName)
+          .replace(/\{\{company\}\}/gi, company)
+          .replace(/\{\{role\}\}/gi, role)
+          .replace(/\{\{name\}\}/gi, userName)
       } catch (clErr) {
         console.error("[import-job] Cover letter generation failed:", clErr)
       }

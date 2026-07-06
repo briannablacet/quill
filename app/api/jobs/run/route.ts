@@ -65,13 +65,20 @@ export async function POST(_req: NextRequest) {
     const resumeForCoverLetter = defaultResume?.text || resumeText
 
     // ------------------------------------------------------------------
-    // 2. Load existing match IDs — only skip jobs seen in the last 7 days.
-    //    Older matches are stale and can be refreshed.
+    // 2. Clear stale agent-found matches (older than 3 days) so every run
+    //    fetches fresh listings. Manual/bookmarklet matches are never deleted.
+    //    Then build the dedup set from what remains.
     // ------------------------------------------------------------------
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
+    await db.collection<MatchDoc>("matches").deleteMany({
+      userId: USER_ID,
+      matchId: /^adzuna:/,
+      updatedAt: { $lt: threeDaysAgo },
+    })
+
     const existing = await db
       .collection<MatchDoc>("matches")
-      .find({ userId: USER_ID, updatedAt: { $gte: sevenDaysAgo } }, { projection: { matchId: 1 } })
+      .find({ userId: USER_ID, matchId: /^adzuna:/ }, { projection: { matchId: 1 } })
       .toArray()
     const existingIds = new Set(existing.map((m) => m.matchId))
 
@@ -114,8 +121,9 @@ export async function POST(_req: NextRequest) {
       )
       if (hitsDealbreaker) continue
 
-      // Salary floor filter
-      if (salaryMin > 0 && result.salaryValue && result.salaryValue < salaryMin) continue
+      // Note: salary floor is already penalized in the scorer (score -= 15).
+      // We don't hard-filter here — low-salary jobs still surface but score lower,
+      // so the user can decide. Many listings omit salary; we never want to drop those.
 
       scored.push(result)
       if (scored.length >= dailyMatchLimit) break
@@ -283,16 +291,20 @@ function scoreJobKeywords(
   let salaryMet = true
   let salaryNote = "Salary not listed"
 
+  // salaryMin/salaryMax are stored in thousands (e.g. 190 = $190k)
+  const salaryFloorDollars = salaryMin < 1000 ? salaryMin * 1000 : salaryMin
+  const salaryCeilDollars = salaryMax && salaryMax < 1000 ? salaryMax * 1000 : salaryMax
+
   if (job.salary) {
     const nums = job.salary.match(/[\d,]+/g)?.map((n) => parseInt(n.replace(/,/g, ""))) ?? []
     if (nums.length >= 2) salaryValue = Math.round((nums[0] + nums[1]) / 2)
     else if (nums.length === 1) salaryValue = nums[0]
 
     if (salaryValue) {
-      if (salaryMin > 0 && salaryValue < salaryMin) {
+      if (salaryFloorDollars > 0 && salaryValue < salaryFloorDollars) {
         salaryMet = false
-        salaryNote = `Listed ~$${(salaryValue / 1000).toFixed(0)}k, floor is $${(salaryMin / 1000).toFixed(0)}k`
-      } else if (salaryMax > 0 && salaryValue > salaryMax * 1.3) {
+        salaryNote = `Listed ~$${(salaryValue / 1000).toFixed(0)}k, floor is $${salaryMin}k`
+      } else if (salaryCeilDollars > 0 && salaryValue > salaryCeilDollars * 1.3) {
         salaryNote = `Listed ~$${(salaryValue / 1000).toFixed(0)}k — above your ceiling`
         salaryMet = true // still apply — they may negotiate
       } else {
@@ -381,7 +393,15 @@ ${resumeText.slice(0, 800)}`
     system,
     prompt,
   })
+
+  // Guaranteed literal replacement of any remaining placeholders the LLM missed
   return text
+    .replace(/\[Company\]/gi, match.company)
+    .replace(/\[Role\]/gi, match.role)
+    .replace(/\[Name\]/gi, userName)
+    .replace(/\{\{company\}\}/gi, match.company)
+    .replace(/\{\{role\}\}/gi, match.role)
+    .replace(/\{\{name\}\}/gi, userName)
 }
 
 // ---------------------------------------------------------------------------
