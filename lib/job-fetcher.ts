@@ -71,6 +71,7 @@ export async function fetchAdzunaJobs(
       }
       const data = await res.json() as { results: AdzunaJob[] }
       for (const j of data.results ?? []) {
+        if (!isWithinTwoWeeks(j.created)) continue
         jobs.push({
           sourceId: `adzuna:${j.id}`,
           source: "adzuna",
@@ -132,6 +133,7 @@ export async function fetchRemotiveJobs(
       const data = await res.json() as { jobs: RemotiveJob[] }
       for (const j of (data.jobs ?? []).slice(0, Math.ceil(maxResults / 3))) {
         if (seen.has(String(j.id))) continue
+        if (!isWithinTwoWeeks(j.publication_date)) continue
         seen.add(String(j.id))
         jobs.push({
           sourceId: `remotive:${j.id}`,
@@ -156,6 +158,14 @@ export async function fetchRemotiveJobs(
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000
+
+export function isWithinTwoWeeks(postedAt: string): boolean {
+  if (!postedAt) return true // no date = keep it
+  const posted = new Date(postedAt).getTime()
+  return !isNaN(posted) && Date.now() - posted <= TWO_WEEKS_MS
+}
 
 function stripHtml(html: string): string {
   return html
