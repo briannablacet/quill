@@ -75,15 +75,13 @@ export async function POST(_req: NextRequest) {
     // ------------------------------------------------------------------
     // 3. Fetch jobs
     // ------------------------------------------------------------------
-    const [adzunaJobs, remotiveJobs] = await Promise.all([
-      fetchAdzunaJobs(titles, locations, remoteOnly, 40),
-      fetchRemotiveJobs(titles, 30),
-    ])
+    // Remotive is disabled — its search ignores query terms and returns random jobs.
+    // Adzuna is the sole source.
+    const adzunaJobs = await fetchAdzunaJobs(titles, locations, remoteOnly, 40)
+    const remotiveJobs: RawJob[] = []
 
     const allJobs: RawJob[] = [...adzunaJobs, ...remotiveJobs]
     const newJobs = allJobs.filter((j) => !existingIds.has(j.sourceId))
-
-    console.log("[v0] Pipeline: titles=", titles, "adzuna=", adzunaJobs.length, "remotive=", remotiveJobs.length, "new=", newJobs.length, "minScore=", minMatchScore)
 
     if (!newJobs.length) {
       await recordLastRun(db)
@@ -98,7 +96,6 @@ export async function POST(_req: NextRequest) {
     for (const job of newJobs.slice(0, dailyMatchLimit * 4)) {
       const result = scoreJobKeywords(job, directives)
       if (!result) continue
-      console.log("[v0] Job:", job.title, "@", job.company, "score=", result.score, result.score < minMatchScore ? "(FILTERED)" : "(PASS)")
       if (result.score < minMatchScore) continue
 
       // Dealbreaker filter
