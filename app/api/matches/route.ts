@@ -1,16 +1,20 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/mongodb"
 import type { MatchDoc } from "@/lib/actions"
+import { auth } from "@/lib/auth"
+import { headers } from "next/headers"
 
-const USER_ID = "default"
-
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const session = await auth.api.getSession({ headers: await headers() })
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
     const db = await getDb()
     const matches = await db
       .collection<MatchDoc>("matches")
-      .find({ userId: USER_ID })
-      .sort({ score: -1, createdAt: -1 })
+      .find({ userId: session.user.id })
+      .sort({ score: -1, updatedAt: -1 })
       .limit(100)
       .toArray()
 

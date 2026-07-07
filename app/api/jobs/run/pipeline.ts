@@ -8,17 +8,32 @@ import { getDb } from "@/lib/mongodb"
 import { fetchAdzunaJobs, type RawJob } from "@/lib/job-fetcher"
 import type { DirectivesDoc, MatchDoc, AgentDoc } from "@/lib/actions"
 
-const USER_ID = "default"
-
 export async function runJobPipeline(): Promise<{ saved: number; message?: string }> {
   const db = await getDb()
 
-  // 1. Load directives
-  const directives = await db
+  // 1. Load directives for ALL users who have configured them
+  const allDirectives = await db
     .collection<DirectivesDoc>("directives")
-    .findOne({ userId: USER_ID })
+    .find({})
+    .toArray()
 
-  if (!directives) return { saved: 0, message: "No directives configured" }
+  if (!allDirectives.length) return { saved: 0, message: "No directives configured" }
+
+  let totalSaved = 0
+
+  for (const directives of allDirectives) {
+    const saved = await runPipelineForUser(db, directives)
+    totalSaved += saved
+  }
+
+  return { saved: totalSaved }
+}
+
+async function runPipelineForUser(
+  db: Awaited<ReturnType<typeof getDb>>,
+  directives: DirectivesDoc
+): Promise<number> {
+  const USER_ID = directives.userId
 
   const {
     titles = [],
@@ -38,7 +53,7 @@ export async function runJobPipeline(): Promise<{ saved: number; message?: strin
   // jobs will always slip through regardless of what the user sets.
   const minMatchScore = rawMinScore ?? 30
 
-  if (!titles.length) return { saved: 0, message: "No target titles configured" }
+  if (!titles.length) return 0
 
   const defaultResume = resumes.find((r) => r.isDefault) ?? resumes[0]
   const resumeForCoverLetter = defaultResume?.text || resumeText
@@ -81,15 +96,15 @@ export async function runJobPipeline(): Promise<{ saved: number; message?: strin
   })
 
   if (!newJobs.length) {
-    await recordLastRun(db)
-    return { saved: 0, message: "No new jobs found" }
+    await recordLastRun(db, USER_ID)
+    return 0
   }
 
   // 5. Score + filter
   const scored: { match: MatchDoc; score: number }[] = []
 
   for (const job of newJobs.slice(0, dailyMatchLimit * 4)) {
-    const result = scoreJobKeywords(job, directives)
+    const result = scoreJobKeywords(job, directives, USER_ID)
     if (!result) continue
     if (result.score < minMatchScore) continue
 
@@ -105,8 +120,8 @@ export async function runJobPipeline(): Promise<{ saved: number; message?: strin
   }
 
   if (!scored.length) {
-    await recordLastRun(db)
-    return { saved: 0, message: "No matches above score threshold" }
+    await recordLastRun(db, USER_ID)
+    return 0
   }
 
   // 6. Generate cover letters sequentially
@@ -132,8 +147,8 @@ export async function runJobPipeline(): Promise<{ saved: number; message?: strin
     )
   }
 
-  await recordLastRun(db)
-  return { saved: withLetters.length }
+  await recordLastRun(db, USER_ID)
+  return withLetters.length
 }
 
 // ---------------------------------------------------------------------------
@@ -142,7 +157,8 @@ export async function runJobPipeline(): Promise<{ saved: number; message?: strin
 
 function scoreJobKeywords(
   job: RawJob,
-  directives: DirectivesDoc
+  directives: DirectivesDoc,
+  userId: string
 ): { match: MatchDoc; score: number; salaryValue?: number } | null {
   const { titles, locations, remoteOnly, salaryMin, salaryMax } = directives
   const titleLower = job.title.toLowerCase()
@@ -251,7 +267,7 @@ function scoreJobKeywords(
   else if (descLower.includes("hybrid") || locationLower.includes("hybrid")) workModel = "Hybrid"
 
   const match: MatchDoc = {
-    userId: USER_ID,
+    userId,
     matchId: job.sourceId,
     company: job.company,
     role: job.title,
@@ -333,9 +349,9 @@ ${resumeText.slice(0, 600)}`
 // Helpers
 // ---------------------------------------------------------------------------
 
-async function recordLastRun(db: Awaited<ReturnType<typeof getDb>>) {
+async function recordLastRun(db: Awaited<ReturnType<typeof getDb>>, userId: string) {
   await db.collection<AgentDoc>("agents").updateOne(
-    { userId: USER_ID, agentId: "scraper" },
+    { userId, agentId: "scraper" },
     { $set: { lastRun: new Date(), updatedAt: new Date() } },
     { upsert: true }
   )
