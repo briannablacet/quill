@@ -213,21 +213,22 @@ function scoreJobKeywords(
   })
 
   // Location / remote (20 pts)
+  // Cast a wide net — many job boards only partially label remote roles
   const isRemoteJob =
     locationLower.includes("remote") ||
-    descLower.includes("fully remote") ||
+    titleLower.includes("remote") ||
+    descLower.includes("remote") ||
     descLower.includes("work from home") ||
-    descLower.includes("100% remote") ||
-    descLower.includes("remote-first") ||
-    descLower.includes("remote first") ||
-    descLower.includes("distributed team")
+    descLower.includes("distributed team") ||
+    descLower.includes("anywhere") ||
+    job.source === "remotive" // Remotive is 100% remote listings
 
   const prefersRemote = remoteOnly || locations.some((l) => l.toLowerCase().includes("remote"))
   const cityLocations = locations.filter((l) => !l.toLowerCase().includes("remote"))
 
   if (prefersRemote) {
-    // Hard reject when user requires remote — don't just score 0, skip entirely
-    if (remoteOnly && !isRemoteJob) return null
+    // Soft reject non-remote when remoteOnly — score 0 but don't hard-reject,
+    // so if titles/seniority score high enough the job can still surface
     score += isRemoteJob ? 20 : 0
     breakdown.push({
       label: "Remote work",
