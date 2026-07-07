@@ -5,7 +5,7 @@
 
 import { generateText } from "ai"
 import { getDb } from "@/lib/mongodb"
-import { fetchAdzunaJobs, type RawJob } from "@/lib/job-fetcher"
+import { fetchAdzunaJobs, fetchRemotiveJobs, type RawJob } from "@/lib/job-fetcher"
 import type { DirectivesDoc, MatchDoc, AgentDoc } from "@/lib/actions"
 
 export async function runJobPipeline(): Promise<{ saved: number; message?: string }> {
@@ -47,7 +47,7 @@ async function runPipelineForUser(
     salaryMin = 0,
     dealbreakers = [],
     dailyMatchLimit = 10,
-    minMatchScore: rawMinScore = 30,
+    minMatchScore: rawMinScore = 20,
     resumeText = "",
     resumes = [],
     name: userName = "the applicant",
@@ -84,13 +84,18 @@ async function runPipelineForUser(
   // Adzuna often posts the same listing with different IDs — block by company+role too
   const existingRoles = new Set(existing.map((m) => `${m.company}|${m.role}`.toLowerCase()))
 
-  // 4. Fetch jobs
-  const adzunaJobs = await fetchAdzunaJobs(titles, locations, remoteOnly, 40)
+  // 4. Fetch jobs from all sources
+  const [adzunaJobs, remotiveJobs] = await Promise.all([
+    fetchAdzunaJobs(titles, locations, remoteOnly, 40),
+    remoteOnly ? fetchRemotiveJobs(titles, 30) : Promise.resolve([]),
+  ])
+  const rawJobs = [...adzunaJobs, ...remotiveJobs]
+  console.log(`[v0] pipeline user=${USER_ID}: adzuna=${adzunaJobs.length} remotive=${remotiveJobs.length}`)
 
   // Deduplicate within the current batch by sourceId AND by company+role
   const seenInBatch = new Set<string>()
   const seenRolesInBatch = new Set<string>()
-  const allJobs: RawJob[] = adzunaJobs.filter((j) => {
+  const allJobs: RawJob[] = rawJobs.filter((j) => {
     if (seenInBatch.has(j.sourceId)) return false
     const roleKey = `${j.company}|${j.title}`.toLowerCase()
     if (seenRolesInBatch.has(roleKey)) return false

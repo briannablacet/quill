@@ -159,12 +159,12 @@ export async function fetchRemotiveJobs(
 // Helpers
 // ---------------------------------------------------------------------------
 
-const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
 
 export function isWithinTwoWeeks(postedAt: string): boolean {
   if (!postedAt) return true // no date = keep it
   const posted = new Date(postedAt).getTime()
-  return !isNaN(posted) && Date.now() - posted <= TWO_WEEKS_MS
+  return !isNaN(posted) && Date.now() - posted <= THIRTY_DAYS_MS
 }
 
 function stripHtml(html: string): string {
