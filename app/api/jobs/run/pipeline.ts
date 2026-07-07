@@ -87,18 +87,16 @@ async function runPipelineForUser(
   const existingRoles = new Set(existing.map((m) => `${m.company}|${m.role}`.toLowerCase()))
 
   // 4. Fetch from all sources in parallel
-  const [adzunaJobs, remotiveJobs, remoteokJobs, wwrJobs, jsearchJobs] = await Promise.all([
-    fetchAdzunaJobs(titles, locations, remoteOnly, 40),
-    remoteOnly ? fetchRemotiveJobs(titles, 30) : Promise.resolve([]),
-    remoteOnly ? fetchRemoteOKJobs(titles, 30) : Promise.resolve([]),
-    remoteOnly ? fetchWWRJobs(titles, 30) : Promise.resolve([]),
+  // Note: Remotive and WWR don't carry senior AI/enablement roles — disabled.
+  // RemoteOK keyword matching is too loose for niche titles — disabled.
+  // JSearch requires Pro plan on RapidAPI — activates automatically once upgraded.
+  const [adzunaJobs, jsearchJobs] = await Promise.all([
+    fetchAdzunaJobs(titles, locations, remoteOnly, 50),
     fetchJSearchJobs(titles, remoteOnly, 50),
   ])
-  const rawJobs = [...adzunaJobs, ...remotiveJobs, ...remoteokJobs, ...wwrJobs, ...jsearchJobs]
+  const rawJobs = [...adzunaJobs, ...jsearchJobs]
   console.log(
-    `[v0] pipeline user=${USER_ID}: adzuna=${adzunaJobs.length} remotive=${remotiveJobs.length}` +
-    ` remoteok=${remoteokJobs.length} wwr=${wwrJobs.length} jsearch=${jsearchJobs.length}` +
-    ` total=${rawJobs.length}`
+    `[v0] pipeline user=${USER_ID}: adzuna=${adzunaJobs.length} jsearch=${jsearchJobs.length} total=${rawJobs.length}`
   )
 
   // Deduplicate within the current batch by sourceId AND by company+role

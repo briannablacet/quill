@@ -56,8 +56,9 @@ export async function fetchAdzunaJobs(
 
   for (const title of titles.slice(0, 5)) {
     try {
-      const query = encodeURIComponent(remoteOnly ? `${title} remote` : title)
-      // Fetch more results per title so after dedup we still have enough
+      // Don't append "remote" to query — it shrinks results dramatically.
+      // The pipeline scorer handles remote preference as a scoring factor.
+      const query = encodeURIComponent(title)
       const url =
         `https://api.adzuna.com/v1/api/jobs/us/search/1` +
         `?app_id=${appId}&app_key=${appKey}` +
@@ -401,12 +402,12 @@ export async function fetchJSearchJobs(
 // Helpers
 // ---------------------------------------------------------------------------
 
-const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
+const SIXTY_DAYS_MS = 60 * 24 * 60 * 60 * 1000
 
 export function isWithinTwoWeeks(postedAt: string): boolean {
   if (!postedAt) return true // no date = keep it
   const posted = new Date(postedAt).getTime()
-  return !isNaN(posted) && Date.now() - posted <= THIRTY_DAYS_MS
+  return !isNaN(posted) && Date.now() - posted <= SIXTY_DAYS_MS
 }
 
 function stripHtml(html: string): string {
