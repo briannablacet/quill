@@ -5,7 +5,7 @@
 
 import { generateText } from "ai"
 import { getDb } from "@/lib/mongodb"
-import { fetchAdzunaJobs, fetchRemotiveJobs, type RawJob } from "@/lib/job-fetcher"
+import { fetchAdzunaJobs, fetchRemotiveJobs, fetchRemoteOKJobs, fetchWWRJobs, fetchJSearchJobs, type RawJob } from "@/lib/job-fetcher"
 import type { DirectivesDoc, MatchDoc, AgentDoc } from "@/lib/actions"
 
 export async function runJobPipeline(): Promise<{ saved: number; message?: string }> {
@@ -67,30 +67,39 @@ async function runPipelineForUser(
   const defaultResume = resumes.find((r) => r.isDefault) ?? resumes[0]
   const resumeForCoverLetter = defaultResume?.text || resumeText
 
-  // 2. Clear stale agent matches (older than 3 days), keep manual ones
+  // 2. Clear stale agent-sourced matches (older than 3 days)
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
   await db.collection<MatchDoc>("matches").deleteMany({
     userId: USER_ID,
-    matchId: /^adzuna:/,
+    matchId: /^(adzuna|remotive|remoteok|wwr|jsearch):/,
     updatedAt: { $lt: threeDaysAgo },
   })
 
   // 3. Build dedup sets from remaining agent matches — by matchId AND by company+role
   const existing = await db
     .collection<MatchDoc>("matches")
-    .find({ userId: USER_ID, matchId: /^adzuna:/ }, { projection: { matchId: 1, company: 1, role: 1 } })
+    .find(
+      { userId: USER_ID, matchId: /^(adzuna|remotive|remoteok|wwr|jsearch):/ },
+      { projection: { matchId: 1, company: 1, role: 1 } }
+    )
     .toArray()
   const existingIds = new Set(existing.map((m) => m.matchId))
-  // Adzuna often posts the same listing with different IDs — block by company+role too
   const existingRoles = new Set(existing.map((m) => `${m.company}|${m.role}`.toLowerCase()))
 
-  // 4. Fetch jobs from all sources
-  const [adzunaJobs, remotiveJobs] = await Promise.all([
+  // 4. Fetch from all sources in parallel
+  const [adzunaJobs, remotiveJobs, remoteokJobs, wwrJobs, jsearchJobs] = await Promise.all([
     fetchAdzunaJobs(titles, locations, remoteOnly, 40),
     remoteOnly ? fetchRemotiveJobs(titles, 30) : Promise.resolve([]),
+    remoteOnly ? fetchRemoteOKJobs(titles, 30) : Promise.resolve([]),
+    remoteOnly ? fetchWWRJobs(titles, 30) : Promise.resolve([]),
+    fetchJSearchJobs(titles, remoteOnly, 50),
   ])
-  const rawJobs = [...adzunaJobs, ...remotiveJobs]
-  console.log(`[v0] pipeline user=${USER_ID}: adzuna=${adzunaJobs.length} remotive=${remotiveJobs.length}`)
+  const rawJobs = [...adzunaJobs, ...remotiveJobs, ...remoteokJobs, ...wwrJobs, ...jsearchJobs]
+  console.log(
+    `[v0] pipeline user=${USER_ID}: adzuna=${adzunaJobs.length} remotive=${remotiveJobs.length}` +
+    ` remoteok=${remoteokJobs.length} wwr=${wwrJobs.length} jsearch=${jsearchJobs.length}` +
+    ` total=${rawJobs.length}`
+  )
 
   // Deduplicate within the current batch by sourceId AND by company+role
   const seenInBatch = new Set<string>()
@@ -213,21 +222,24 @@ function scoreJobKeywords(
   })
 
   // Location / remote (20 pts)
+  // Cast a wide net — many job boards only partially label remote roles
   const isRemoteJob =
     locationLower.includes("remote") ||
-    descLower.includes("fully remote") ||
+    titleLower.includes("remote") ||
+    descLower.includes("remote") ||
     descLower.includes("work from home") ||
-    descLower.includes("100% remote") ||
-    descLower.includes("remote-first") ||
-    descLower.includes("remote first") ||
-    descLower.includes("distributed team")
+    descLower.includes("distributed team") ||
+    descLower.includes("anywhere") ||
+    job.source === "remotive" || // Remotive, RemoteOK, WWR are 100% remote boards
+    job.source === "remoteok" ||
+    job.source === "wwr"
 
   const prefersRemote = remoteOnly || locations.some((l) => l.toLowerCase().includes("remote"))
   const cityLocations = locations.filter((l) => !l.toLowerCase().includes("remote"))
 
   if (prefersRemote) {
-    // Hard reject when user requires remote — don't just score 0, skip entirely
-    if (remoteOnly && !isRemoteJob) return null
+    // Soft reject non-remote when remoteOnly — score 0 but don't hard-reject,
+    // so if titles/seniority score high enough the job can still surface
     score += isRemoteJob ? 20 : 0
     breakdown.push({
       label: "Remote work",
