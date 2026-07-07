@@ -17,18 +17,20 @@ export const auth = betterAuth({
     autoSignIn: true,
   },
   trustedOrigins: [
+    // Wildcard covers every *.vercel.app preview + production URL automatically
+    "https://*.vercel.app",
     // v0 preview iframe
     ...(process.env.V0_RUNTIME_URL ? [process.env.V0_RUNTIME_URL] : []),
-    // Current deployment URL (unique per preview build)
+    // Current deployment URL
     ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
     // Stable production URL
     ...(process.env.VERCEL_PROJECT_PRODUCTION_URL
       ? [`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`]
       : []),
-    // Custom domain if set
+    // Custom domain(s)
     ...(process.env.NEXT_PUBLIC_APP_URL ? [process.env.NEXT_PUBLIC_APP_URL] : []),
-    // Catch-all for any *.vercel.app preview URL for this project
-    "https://chief-of-staff-dashboard.vercel.app",
+    "https://briannasnirvana.com",
+    "https://www.briannasnirvana.com",
   ],
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
