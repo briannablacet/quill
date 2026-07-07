@@ -18,6 +18,7 @@ import {
   Building2,
   Briefcase,
   Clock,
+  Trash2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Card } from "@/components/ui/card"
@@ -26,7 +27,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { updateMatchStatus, saveCoverLetter, saveResumeForMatch, saveCoverLetterToLibrary, saveResumeEntry, type MatchDoc, type ResumeEntry, type CoverLetterEntry } from "@/lib/actions"
+import { updateMatchStatus, saveCoverLetter, saveResumeForMatch, saveCoverLetterToLibrary, saveResumeEntry, deleteMatch, type MatchDoc, type ResumeEntry, type CoverLetterEntry } from "@/lib/actions"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AtsChecklist } from "@/components/cos/ats-checklist"
 import { CoverLetterLibrary } from "@/components/cos/cover-letter-library"
@@ -57,12 +58,29 @@ export function Matches({ initialMatches, initialSelectedMatchId, onMatchSelecte
   const [selected, setSelected] = useState<MatchDoc | null>(
     initialSelectedMatchId ? (initialMatches.find((m) => m.matchId === initialSelectedMatchId) ?? null) : null
   )
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
   const handleStatusChange = (matchId: string, status: MatchDoc["status"]) => {
-    setMatches((prev) =>
-      prev.map((m) => (m.matchId === matchId ? { ...m, status } : m))
+    mutate(
+      matches.map((m) => (m.matchId === matchId ? { ...m, status } : m)),
+      false
     )
     if (selected?.matchId === matchId) {
       setSelected((prev) => (prev ? { ...prev, status } : prev))
+    }
+  }
+
+  const handleDelete = async (e: React.MouseEvent, matchId: string) => {
+    e.stopPropagation()
+    setDeletingId(matchId)
+    try {
+      await deleteMatch(matchId)
+      mutate(matches.filter((m) => m.matchId !== matchId), false)
+      toast.success("Job removed")
+    } catch {
+      toast.error("Failed to remove job")
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -147,7 +165,7 @@ export function Matches({ initialMatches, initialSelectedMatchId, onMatchSelecte
 
         <ul className="divide-y divide-border">
           {matches.map((match) => (
-            <li key={match.matchId}>
+            <li key={match.matchId} className="group relative">
               <button
                 type="button"
                 onClick={() => setSelected(match)}
@@ -197,6 +215,16 @@ export function Matches({ initialMatches, initialSelectedMatchId, onMatchSelecte
                   </Badge>
                   <ChevronRight className="size-4 text-muted-foreground" />
                 </span>
+              </button>
+              {/* Delete button — appears on hover */}
+              <button
+                type="button"
+                onClick={(e) => handleDelete(e, match.matchId)}
+                disabled={deletingId === match.matchId}
+                aria-label="Remove job"
+                className="absolute right-12 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 disabled:opacity-50"
+              >
+                <Trash2 className="size-4" />
               </button>
             </li>
           ))}

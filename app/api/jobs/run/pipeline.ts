@@ -186,6 +186,8 @@ function scoreJobKeywords(
   const cityLocations = locations.filter((l) => !l.toLowerCase().includes("remote"))
 
   if (prefersRemote) {
+    // Hard reject when user requires remote — don't just score 0, skip entirely
+    if (remoteOnly && !isRemoteJob) return null
     score += isRemoteJob ? 20 : 0
     breakdown.push({
       label: "Remote work",
