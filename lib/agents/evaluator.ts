@@ -1,0 +1,88 @@
+import { generateObject } from "ai"
+import { getDb } from "@/lib/mongodb"
+import type { TaskDoc } from "@/lib/tasks"
+import type { ContentDoc } from "./writer"
+import { SCORECARD_SYSTEM, buildScorecardPrompt, scorecardSchema } from "./prompts/content-scorecard"
+import { LANDING_PAGE_SCORECARD_SYSTEM, buildLandingPageScorecardPrompt } from "./prompts/landing-page-scorecard"
+import { CASE_STUDY_SCORECARD_SYSTEM, buildCaseStudyScorecardPrompt } from "./prompts/case-study-scorecard"
+
+// ---------------------------------------------------------------------------
+// Evaluator agent — score_content task handler (Content Quality Scorecard).
+// See migration.md §4 (Evaluator agent) and §5 Phase 2.
+//
+// Criteria are mode-aware: a landing page and a case study are judged
+// against their own real format/factual requirements, not blog_post's
+// article-specific rules. All modes share one output schema (scorecardSchema)
+// so the rest of the system (orchestrator, ContentDoc) doesn't need to care
+// which mode produced the grade.
+// ---------------------------------------------------------------------------
+
+type ScoreContentPayload = {
+  contentId: string
+}
+
+function buildScorecardCall(content: ContentDoc): { system: string; prompt: string } {
+  if (content.mode === "landing_page") {
+    const callToAction = content.meta?.callToAction ?? ""
+    return {
+      system: LANDING_PAGE_SCORECARD_SYSTEM,
+      prompt: buildLandingPageScorecardPrompt(content.topic, content.body, callToAction),
+    }
+  }
+  if (content.mode === "case_study") {
+    const sourceFacts = content.meta?.sourceFacts ?? ""
+    return {
+      system: CASE_STUDY_SCORECARD_SYSTEM,
+      prompt: buildCaseStudyScorecardPrompt(content.topic, content.body, sourceFacts),
+    }
+  }
+  // Default: blog_post's article criteria.
+  return {
+    system: SCORECARD_SYSTEM,
+    prompt: buildScorecardPrompt(content.topic, content.body),
+  }
+}
+
+export async function scoreContent(task: TaskDoc): Promise<Record<string, unknown>> {
+  const { contentId } = task.payload as ScoreContentPayload
+
+  if (!contentId || typeof contentId !== "string") {
+    throw new Error("score_content task requires a non-empty 'contentId' in payload")
+  }
+
+  const db = await getDb()
+  const contentCollection = db.collection<ContentDoc>("content")
+  const content = await contentCollection.findOne({ contentId })
+
+  if (!content) {
+    throw new Error(`No content document found for contentId: ${contentId}`)
+  }
+
+  const { system, prompt } = buildScorecardCall(content)
+
+  const { object } = await generateObject({
+    model: "anthropic/claude-sonnet-5",
+    schema: scorecardSchema,
+    system,
+    prompt,
+    temperature: 0.2,
+  })
+
+  const scoredAt = new Date()
+
+  await contentCollection.updateOne(
+    { contentId },
+    {
+      $set: {
+        grade: object.grade,
+        score: object.score,
+        breakdown: object.breakdown,
+        fixGuidance: object.fixGuidance,
+        scoredAt,
+        updatedAt: scoredAt,
+      },
+    }
+  )
+
+  return { contentId, grade: object.grade, score: object.score }
+}

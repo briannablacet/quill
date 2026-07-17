@@ -21,5 +21,5 @@ function getClientPromise(): Promise<MongoClient> {
 
 export async function getDb(): Promise<Db> {
   const client = await getClientPromise()
-  return client.db("chief-of-staff")
+  return client.db("quill")
 }
