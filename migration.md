@@ -208,6 +208,8 @@ Two more real things found extending this to the other modes:
 
 ~~JSearch/RapidAPI plan~~ — removed. That decision was about `chief-of-staff-dashboard`'s job-fetching source and does not apply to Quill; Quill has no job-search functionality (see the "Relationship to other personal tools" note above).
 
+6. **v1.1 backlog — review external content:** the user has built "Content Studio" as a Claude Project at work, used to review writer's briefs and blog posts (not Quill-generated) and return fix guidance — the same fixGuidance-not-just-criticism design principle already in Quill's evaluator. Not scope creep for the current build, but a real, intentional v1.1 addition: a task type (e.g. `review_content`) that runs the existing evaluator against user-supplied external text rather than a Quill-generated draft. Likely needs its own Scorecard criteria (external content won't have a `mode` Quill assigned) or a "general" criteria set as a fallback. Deferred until the current mode/regeneration/retrieval work is stable.
+
 ---
 
 ## 7. Ground Rules for the Rebuild
