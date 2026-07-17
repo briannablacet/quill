@@ -56,31 +56,74 @@ export async function enqueueFollowUps(task: TaskDoc, result: Record<string, unk
     const content = await db.collection<ContentDoc>("content").findOne({ contentId: result.contentId })
 
     if (!content) return
-    // Auto-regeneration only knows how to rebuild a blog_post payload so far.
-    // landing_page/case_study get real grades but not yet an auto-fix —
-    // reconstructing their structured payloads (title/CTA/bullets, or
-    // customer/problem/solution/results) from fixGuidance text is real work,
-    // not a copy-paste of this branch. Scored-but-not-regenerated is a valid
-    // stopping point, not a bug.
-    if (content.mode !== "blog_post") return
     // Cap at one auto-fix pass — don't chain regenerations of regenerations.
     if (content.regeneratedFrom) return
     if (typeof content.score !== "number" || content.score >= REGENERATION_SCORE_THRESHOLD) return
 
     const fixNotes = (content.fixGuidance ?? []).map((f) => `- ${f}`).join("\n")
-    const revisedBrief = [
-      content.brief,
-      `This is a revision of an earlier draft that scored ${content.score}/100. Fix these specific issues:`,
-      fixNotes,
-    ]
-      .filter(Boolean)
-      .join("\n\n")
+    if (!fixNotes) return
 
-    await enqueueTask(task.userId, "generate_content", {
-      mode: "blog_post",
-      topic: content.topic,
-      brief: revisedBrief,
-      regeneratedFrom: content.contentId,
-    })
+    if (content.mode === "blog_post") {
+      const revisedBrief = [
+        content.brief,
+        `This is a revision of an earlier draft that scored ${content.score}/100. Fix these specific issues:`,
+        fixNotes,
+      ]
+        .filter(Boolean)
+        .join("\n\n")
+
+      await enqueueTask(task.userId, "generate_content", {
+        mode: "blog_post",
+        topic: content.topic,
+        brief: revisedBrief,
+        regeneratedFrom: content.contentId,
+      })
+      return
+    }
+
+    if (content.mode === "landing_page" && content.meta?.originalPayload) {
+      const original = JSON.parse(content.meta.originalPayload)
+      const revisedDetails = [
+        original.additionalDetails,
+        `This is a revision of an earlier draft that scored ${content.score}/100. Fix these specific issues:`,
+        fixNotes,
+      ]
+        .filter(Boolean)
+        .join("\n\n")
+
+      await enqueueTask(task.userId, "generate_content", {
+        mode: "landing_page",
+        ...original,
+        additionalDetails: revisedDetails,
+        regeneratedFrom: content.contentId,
+      })
+      return
+    }
+
+    if (content.mode === "case_study" && content.meta?.originalPayload) {
+      // The facts (customerName/problem/solution/results/etc.) are carried
+      // over unchanged from the original payload — a case study regeneration
+      // fixes prose/tone/structure, never the underlying facts.
+      const original = JSON.parse(content.meta.originalPayload)
+      const revisedDetails = [
+        original.additionalDetails,
+        `This is a revision of an earlier draft that scored ${content.score}/100. Fix these specific issues (do not change any of the facts above):`,
+        fixNotes,
+      ]
+        .filter(Boolean)
+        .join("\n\n")
+
+      await enqueueTask(task.userId, "generate_content", {
+        mode: "case_study",
+        ...original,
+        additionalDetails: revisedDetails,
+        regeneratedFrom: content.contentId,
+      })
+      return
+    }
+
+    // Other modes (social_media, battlecard, taglines) don't have an auto-fix
+    // path yet — either unscored, or scored-but-not-regenerated is a valid
+    // stopping point rather than a gap to force-close here.
   }
 }

@@ -160,12 +160,25 @@ export async function generateContent(task: TaskDoc): Promise<Record<string, unk
     items = object.posts
     body = items.map((line, i) => `${i + 1}. ${line}`).join("\n\n")
   } else if (mode === "landing_page") {
-    const landingInput = payload as LandingPageBrief
+    const { regeneratedFrom: landingRegenFrom, ...landingInput } = payload as LandingPageBrief & { regeneratedFrom?: string }
     if (!landingInput.title || !landingInput.callToAction) {
       throw new Error("landing_page mode requires 'title' and 'callToAction' in payload")
     }
     topic = landingInput.title
-    meta = { callToAction: landingInput.callToAction }
+    regeneratedFrom = landingRegenFrom
+    meta = {
+      callToAction: landingInput.callToAction,
+      // Full original payload, for the orchestrator to reconstruct a
+      // regeneration request (migration.md §5 Phase 4 extension) without
+      // losing structured fields (bullets, goal) that don't fit elsewhere.
+      originalPayload: JSON.stringify({
+        title: landingInput.title,
+        goal: landingInput.goal,
+        callToAction: landingInput.callToAction,
+        bullets: landingInput.bullets,
+        additionalDetails: landingInput.additionalDetails,
+      }),
+    }
 
     const { text } = await generateText({
       model: "anthropic/claude-sonnet-5",
@@ -181,11 +194,12 @@ export async function generateContent(task: TaskDoc): Promise<Record<string, unk
     })
     body = text
   } else if (mode === "case_study") {
-    const caseInput = payload as CaseStudyBrief
+    const { regeneratedFrom: caseRegenFrom, ...caseInput } = payload as CaseStudyBrief & { regeneratedFrom?: string }
     if (!caseInput.customerName || !caseInput.problem || !caseInput.solution || !caseInput.results) {
       throw new Error("case_study mode requires 'customerName', 'problem', 'solution', and 'results' in payload")
     }
     topic = `${caseInput.customerName} case study`
+    regeneratedFrom = caseRegenFrom
     meta = {
       sourceFacts: [
         `Customer: ${caseInput.customerName}`,
@@ -196,6 +210,20 @@ export async function generateContent(task: TaskDoc): Promise<Record<string, unk
         `Results: ${caseInput.results}`,
         caseInput.quote ? `Quote: "${caseInput.quote}"${caseInput.quoteSpeaker ? ` — ${caseInput.quoteSpeaker}` : ""}` : "",
       ].filter(Boolean).join("\n"),
+      // Full original payload, for the orchestrator to reconstruct a
+      // regeneration request with the exact same facts (migration.md §5
+      // Phase 4 extension) — a case study regeneration must never let the
+      // facts drift, only the prose/tone around them.
+      originalPayload: JSON.stringify({
+        customerName: caseInput.customerName,
+        customerRole: caseInput.customerRole,
+        company: caseInput.company,
+        problem: caseInput.problem,
+        solution: caseInput.solution,
+        results: caseInput.results,
+        quote: caseInput.quote,
+        quoteSpeaker: caseInput.quoteSpeaker,
+      }),
     }
 
     const { text } = await generateText({
