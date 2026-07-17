@@ -3,20 +3,27 @@ import { enqueueTask } from "@/lib/tasks"
 import { getDb } from "@/lib/mongodb"
 import { generateContent, type ContentDoc } from "./writer"
 import { scoreContent } from "./evaluator"
+import { fetchCompetitorContent } from "./competitive-intel"
+import { monitorSerp } from "./serp-monitor"
+import { suggestIdeas } from "./ideation"
 
 // Below this score, the orchestrator treats a draft as worth auto-fixing
 // rather than shipping as-is. Tunable; not a formal product decision yet.
 const REGENERATION_SCORE_THRESHOLD = 90
 
 // Dispatcher — maps a queued task to the agent handler that executes it.
-// New task types (fetch_competitor_content, ...) get a case here as their
-// agents are built out in later phases (migration.md §5).
 export async function runTask(task: TaskDoc): Promise<Record<string, unknown>> {
   switch (task.type) {
     case "generate_content":
       return generateContent(task)
     case "score_content":
       return scoreContent(task)
+    case "fetch_competitor_content":
+      return fetchCompetitorContent(task)
+    case "monitor_serp":
+      return monitorSerp(task)
+    case "suggest_ideas":
+      return suggestIdeas(task)
     default:
       throw new Error(`No agent handler for task type: ${task.type}`)
   }

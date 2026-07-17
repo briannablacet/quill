@@ -7,13 +7,16 @@ import { TAGLINE_SYSTEM, buildTaglinePrompt, parseTaglines, type TaglineBrief } 
 import { socialMediaSchema, buildSocialMediaSystem, buildSocialMediaPrompt, platformSpec, type SocialMediaBrief } from "./prompts/social-media"
 import { LANDING_PAGE_SYSTEM, buildLandingPagePrompt, type LandingPageBrief } from "./prompts/landing-page"
 import { CASE_STUDY_SYSTEM, CASE_STUDY_TEMPERATURE, buildCaseStudyPrompt, type CaseStudyBrief } from "./prompts/case-study"
+import { BATTLECARD_SYSTEM, buildBattlecardPrompt, type BattlecardBrief } from "./prompts/battlecard"
+import { resolveCompetitorTarget } from "./competitive-intel"
+import { fetchPageText } from "./serper"
 
 // ---------------------------------------------------------------------------
 // Writer agent — generate_content task handler.
 // See migration.md §4 (Writer agent) and §5 Phase 1/3.
 // ---------------------------------------------------------------------------
 
-export type ContentMode = "blog_post" | "taglines" | "social_media" | "landing_page" | "case_study"
+export type ContentMode = "blog_post" | "taglines" | "social_media" | "landing_page" | "case_study" | "battlecard"
 
 export type ScorecardBreakdownItem = {
   criterion: string
@@ -57,12 +60,22 @@ export type ContentDoc = {
 // Adding a new content mode = one entry here + one prompt file. This is the
 // extraction point migration.md §5 Phase 3 grows: one Skribil mode at a time.
 
+type BattlecardPayload = {
+  competitor: string // name or URL, resolved the same way as fetch_competitor_content
+  positioning: string
+  ourAdvantages?: string
+  tone?: string
+  style?: string
+  mood?: string
+}
+
 type GenerateContentPayload =
   | (BlogPostBrief & { mode?: "blog_post"; regeneratedFrom?: string })
   | (TaglineBrief & { mode: "taglines" })
   | (SocialMediaBrief & { mode: "social_media" })
   | (LandingPageBrief & { mode: "landing_page" })
   | (CaseStudyBrief & { mode: "case_study" })
+  | (BattlecardPayload & { mode: "battlecard" })
 
 export async function generateContent(task: TaskDoc): Promise<Record<string, unknown>> {
   const payload = task.payload as GenerateContentPayload
@@ -166,6 +179,37 @@ export async function generateContent(task: TaskDoc): Promise<Record<string, unk
       prompt: buildCaseStudyPrompt(caseInput),
       maxOutputTokens: 2000,
       temperature: CASE_STUDY_TEMPERATURE,
+    })
+    body = text
+  } else if (mode === "battlecard") {
+    const battlecardInput = payload as BattlecardPayload
+    if (!battlecardInput.competitor || !battlecardInput.positioning) {
+      throw new Error("battlecard mode requires 'competitor' and 'positioning' in payload")
+    }
+
+    const target = await resolveCompetitorTarget(battlecardInput.competitor)
+    const pageText = await fetchPageText(target.url)
+    if (!pageText || pageText.length < 200) {
+      throw new Error(`Could not read enough content from ${target.url} to ground a battlecard (likely JS-rendered or blocked)`)
+    }
+
+    topic = `${target.name} battlecard`
+    meta = { competitorUrl: target.url }
+
+    const { text } = await generateText({
+      model: "anthropic/claude-sonnet-5",
+      system: BATTLECARD_SYSTEM,
+      prompt: buildBattlecardPrompt({
+        competitorName: target.name,
+        competitorPageText: pageText,
+        positioning: battlecardInput.positioning,
+        ourAdvantages: battlecardInput.ourAdvantages,
+        tone: battlecardInput.tone,
+        style: battlecardInput.style,
+        mood: battlecardInput.mood,
+      }),
+      maxOutputTokens: 4000,
+      temperature: 0.4,
     })
     body = text
   } else {

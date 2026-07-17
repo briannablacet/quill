@@ -64,6 +64,14 @@ export async function GET(req: NextRequest) {
       solution: "Built a task queue, a writer agent, and an evaluator agent whose grading automatically triggers a rewrite when a draft scores below 90.",
       results: "A real draft scored 83/100, was automatically rewritten based on the evaluator's specific feedback, and the second draft scored 93/100 with zero human involvement.",
     },
+    battlecard: {
+      mode: "battlecard",
+      competitor: "Salesforce Agentforce",
+      positioning:
+        "Quill is an ambient agentic content marketing system: it writes a draft, grades it against explicit criteria with a Content Quality Scorecard, and automatically rewrites anything that scores below 90 — with no human review step required before that correction happens.",
+      ourAdvantages:
+        "Every generated piece is stored as a real database document, never localStorage. The evaluator's grading criteria are mode-specific (a landing page and a case study are graded on different, real requirements, not one generic checklist).",
+    },
   }
 
   await enqueueTask(
