@@ -5,6 +5,7 @@ import type { ContentDoc } from "./writer"
 import { SCORECARD_SYSTEM, buildScorecardPrompt, scorecardSchema } from "./prompts/content-scorecard"
 import { LANDING_PAGE_SCORECARD_SYSTEM, buildLandingPageScorecardPrompt } from "./prompts/landing-page-scorecard"
 import { CASE_STUDY_SCORECARD_SYSTEM, buildCaseStudyScorecardPrompt } from "./prompts/case-study-scorecard"
+import { getBrandProfile } from "./brand-profile"
 
 // ---------------------------------------------------------------------------
 // Evaluator agent — score_content task handler (Content Quality Scorecard).
@@ -21,7 +22,7 @@ type ScoreContentPayload = {
   contentId: string
 }
 
-function buildScorecardCall(content: ContentDoc): { system: string; prompt: string } {
+async function buildScorecardCall(content: ContentDoc): Promise<{ system: string; prompt: string }> {
   if (content.mode === "landing_page") {
     const callToAction = content.meta?.callToAction ?? ""
     return {
@@ -36,10 +37,23 @@ function buildScorecardCall(content: ContentDoc): { system: string; prompt: stri
       prompt: buildCaseStudyScorecardPrompt(content.topic, content.body, sourceFacts),
     }
   }
-  // Default: blog_post's article criteria.
+  // Default: blog_post's article criteria, plus real brand rules when a
+  // brand profile exists (migration.md §5 Phase 5 retrieval layer) — kept
+  // to a bounded, high-signal subset (avoid-phrases + core style points)
+  // rather than dumping the entire terminology/customRules list into the
+  // grading prompt.
+  const profile = await getBrandProfile(content.userId)
+  const brandRules = profile
+    ? [
+        ...profile.voice.avoidPhrases.map((p) => `Must not use: "${p}"`),
+        ...profile.voice.stylePoints.slice(0, 5),
+        ...(profile.styleRules.oxfordComma ? ["Uses the Oxford comma consistently"] : []),
+      ]
+    : undefined
+
   return {
     system: SCORECARD_SYSTEM,
-    prompt: buildScorecardPrompt(content.topic, content.body),
+    prompt: buildScorecardPrompt(content.topic, content.body, brandRules),
   }
 }
 
@@ -58,7 +72,7 @@ export async function scoreContent(task: TaskDoc): Promise<Record<string, unknow
     throw new Error(`No content document found for contentId: ${contentId}`)
   }
 
-  const { system, prompt } = buildScorecardCall(content)
+  const { system, prompt } = await buildScorecardCall(content)
 
   const { object } = await generateObject({
     model: "anthropic/claude-sonnet-5",

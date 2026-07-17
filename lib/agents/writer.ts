@@ -10,6 +10,7 @@ import { CASE_STUDY_SYSTEM, CASE_STUDY_TEMPERATURE, buildCaseStudyPrompt, type C
 import { BATTLECARD_SYSTEM, buildBattlecardPrompt, type BattlecardBrief } from "./prompts/battlecard"
 import { resolveCompetitorTarget } from "./competitive-intel"
 import { fetchPageText } from "./serper"
+import { getBrandProfile, toPromptInputs } from "./brand-profile"
 
 // ---------------------------------------------------------------------------
 // Writer agent — generate_content task handler.
@@ -97,11 +98,23 @@ export async function generateContent(task: TaskDoc): Promise<Record<string, unk
     brief = rest.brief
     regeneratedFrom = regenFrom
 
+    // Real brand profile (migration.md §5 Phase 5 retrieval layer) fills in
+    // writingStyle/brandVoice/messaging when the caller didn't already
+    // supply them explicitly — explicit payload values win if given.
+    const profile = await getBrandProfile(task.userId)
+    const profileInputs = toPromptInputs(profile)
+
     const { text } = await generateText({
       model: "anthropic/claude-sonnet-5",
       system: BLOG_POST_SYSTEM,
-      prompt: buildBlogPostPrompt({ topic, ...rest }),
-      maxOutputTokens: 4000,
+      prompt: buildBlogPostPrompt({
+        topic,
+        ...rest,
+        writingStyle: rest.writingStyle ?? profileInputs.writingStyle,
+        brandVoice: rest.brandVoice ?? profileInputs.brandVoice,
+        messaging: rest.messaging ?? profileInputs.messaging,
+      }),
+      maxOutputTokens: 6000,
       temperature: 0.3,
     })
     body = text

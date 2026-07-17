@@ -38,6 +38,7 @@ export type BrandVoice = {
 
 export type Messaging = {
   valueProposition?: string
+  keyMessages?: string[]
 }
 
 export function buildStyleGuideInstructions(
@@ -107,6 +108,9 @@ export function buildStyleGuideInstructions(
 
   if (brandVoice?.brandVoice?.tone) instructions += `\n- Tone: ${brandVoice.brandVoice.tone}`
   if (messaging?.valueProposition) instructions += `\n- Value Proposition: ${messaging.valueProposition}`
+  messaging?.keyMessages?.forEach((m) => {
+    instructions += `\n- Key message to weave in where relevant: ${m}`
+  })
 
   if (!instructions) return ""
 

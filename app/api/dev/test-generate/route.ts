@@ -32,6 +32,12 @@ export async function GET(req: NextRequest) {
   const mode = req.nextUrl.searchParams.get("mode") ?? "blog_post"
 
   const TEST_PAYLOADS: Record<string, Record<string, unknown>> = {
+    brand_test: {
+      mode: "blog_post",
+      topic: "Why third-party big data platforms are the wrong foundation for a SIEM",
+      brief:
+        "Written for a technical security audience (SOC analysts, CISOs). Make the case for a purpose-built, cloud-native data lake instead of bolting a SIEM onto a generic big data platform. Mention agentic AI and zero trust naturally if relevant.",
+    },
     taglines: {
       mode: "taglines",
       businessName: "Quill",
