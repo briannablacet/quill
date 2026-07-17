@@ -89,6 +89,14 @@ export async function generateContent(task: TaskDoc): Promise<Record<string, unk
   let regeneratedFrom: string | undefined
   let meta: Record<string, string> | undefined
 
+  // Real brand profile (migration.md §5 Phase 5 retrieval layer) fills in
+  // writingStyle/brandVoice/messaging for every mode below when the caller
+  // didn't already supply them explicitly — explicit payload values win.
+  // Fetched once per task rather than per-mode; taglines is deliberately
+  // excluded (not a mode used for real brand work, per user direction).
+  const profile = mode === "taglines" ? null : await getBrandProfile(task.userId)
+  const profileInputs = toPromptInputs(profile)
+
   if (mode === "blog_post") {
     const { topic: t, regeneratedFrom: regenFrom, ...rest } = payload as BlogPostBrief & { regeneratedFrom?: string }
     if (!t || typeof t !== "string") {
@@ -97,12 +105,6 @@ export async function generateContent(task: TaskDoc): Promise<Record<string, unk
     topic = t
     brief = rest.brief
     regeneratedFrom = regenFrom
-
-    // Real brand profile (migration.md §5 Phase 5 retrieval layer) fills in
-    // writingStyle/brandVoice/messaging when the caller didn't already
-    // supply them explicitly — explicit payload values win if given.
-    const profile = await getBrandProfile(task.userId)
-    const profileInputs = toPromptInputs(profile)
 
     const { text } = await generateText({
       model: "anthropic/claude-sonnet-5",
@@ -146,11 +148,16 @@ export async function generateContent(task: TaskDoc): Promise<Record<string, unk
       model: "anthropic/claude-sonnet-5",
       schema: socialMediaSchema,
       system: buildSocialMediaSystem(platform),
-      prompt: buildSocialMediaPrompt(socialInput),
+      prompt: buildSocialMediaPrompt({
+        ...socialInput,
+        writingStyle: socialInput.writingStyle ?? profileInputs.writingStyle,
+        brandVoice: socialInput.brandVoice ?? profileInputs.brandVoice,
+        messaging: socialInput.messaging ?? profileInputs.messaging,
+      }),
       maxOutputTokens: platformSpec(platform).maxOutputTokens,
       temperature: 0.8,
     })
-    items = object
+    items = object.posts
     body = items.map((line, i) => `${i + 1}. ${line}`).join("\n\n")
   } else if (mode === "landing_page") {
     const landingInput = payload as LandingPageBrief
@@ -163,7 +170,12 @@ export async function generateContent(task: TaskDoc): Promise<Record<string, unk
     const { text } = await generateText({
       model: "anthropic/claude-sonnet-5",
       system: LANDING_PAGE_SYSTEM,
-      prompt: buildLandingPagePrompt(landingInput),
+      prompt: buildLandingPagePrompt({
+        ...landingInput,
+        writingStyle: landingInput.writingStyle ?? profileInputs.writingStyle,
+        brandVoice: landingInput.brandVoice ?? profileInputs.brandVoice,
+        messaging: landingInput.messaging ?? profileInputs.messaging,
+      }),
       maxOutputTokens: 2000,
       temperature: 0.3,
     })
@@ -189,7 +201,12 @@ export async function generateContent(task: TaskDoc): Promise<Record<string, unk
     const { text } = await generateText({
       model: "anthropic/claude-sonnet-5",
       system: CASE_STUDY_SYSTEM,
-      prompt: buildCaseStudyPrompt(caseInput),
+      prompt: buildCaseStudyPrompt({
+        ...caseInput,
+        writingStyle: caseInput.writingStyle ?? profileInputs.writingStyle,
+        brandVoice: caseInput.brandVoice ?? profileInputs.brandVoice,
+        messaging: caseInput.messaging ?? profileInputs.messaging,
+      }),
       maxOutputTokens: 2000,
       temperature: CASE_STUDY_TEMPERATURE,
     })
@@ -220,6 +237,9 @@ export async function generateContent(task: TaskDoc): Promise<Record<string, unk
         tone: battlecardInput.tone,
         style: battlecardInput.style,
         mood: battlecardInput.mood,
+        writingStyle: profileInputs.writingStyle,
+        brandVoice: profileInputs.brandVoice,
+        messaging: profileInputs.messaging,
       }),
       maxOutputTokens: 4000,
       temperature: 0.4,

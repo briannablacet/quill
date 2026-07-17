@@ -9,7 +9,11 @@ export const CASE_STUDY_SCORECARD_SYSTEM = `You are a strict fact-checker gradin
 Your primary job is catching fabrication: any name, number, quote, or detail that was not in the source facts is a serious failure, not a minor style note.
 Do not soften the grade to be encouraging — a factually clean but plain case study should still outscore a vivid but embellished one.`
 
-export function buildCaseStudyScorecardPrompt(topic: string, body: string, sourceFacts: string): string {
+export function buildCaseStudyScorecardPrompt(topic: string, body: string, sourceFacts: string, brandRules?: string[]): string {
+  const brandSection = brandRules?.length
+    ? `\nIt also needed to follow these real brand style rules — check compliance with each one specifically, and quote the violating text if a rule was broken:\n${brandRules.map((r) => `- ${r}`).join("\n")}\n`
+    : ""
+
   return `Grade this case study draft, written about: "${topic}"
 
 Here are the ONLY facts the writer was given to work with:
@@ -22,8 +26,8 @@ Check the draft against these criteria — the first two are the most important:
 - Uses the customer's real name and role consistently throughout, unchanged from the source facts
 - Results are presented as stated, not embellished or exaggerated beyond the source facts
 - Professional, factual, credible tone — no marketing fluff or generic hype language
-
-Score against exactly these six criteria in the breakdown, plus overall credibility. For each criterion: state whether it was met, and give a one-sentence, specific note — if something was fabricated, quote the fabricated text and name what source fact it should have come from instead.
+${brandSection}
+Score against exactly these criteria in the breakdown (six factual/structural criteria${brandRules?.length ? ", plus each brand rule listed above" : ""}), plus overall credibility. For each criterion: state whether it was met, and give a one-sentence, specific note — if something was fabricated, quote the fabricated text and name what source fact it should have come from instead.
 
 fixGuidance should be a short list of concrete, actionable fixes — not general advice. If nothing needs fixing, return an empty array.
 

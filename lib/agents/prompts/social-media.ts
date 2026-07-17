@@ -9,7 +9,14 @@ import { buildStyleGuideInstructions, type WritingStyle, type BrandVoice, type M
 
 export type SocialPlatform = "linkedin" | "twitter" | "facebook" | "instagram"
 
-export const socialMediaSchema = z.array(z.string()).min(1)
+// Wrapped in an object rather than a bare top-level array: every other
+// generateObject call in Quill uses a top-level object schema, and this is
+// the one place that didn't — a top-level array schema is a rougher fit for
+// tool-based structured output and started intermittently failing to parse
+// once prompts got longer (brand rules added). Real bug, not a token issue.
+export const socialMediaSchema = z.object({
+  posts: z.array(z.string()).min(1),
+})
 
 export const VARIATION_APPROACHES = [
   "Question/Hook",
@@ -29,7 +36,7 @@ const PLATFORM_SPECS: Record<SocialPlatform, { maxLength: string; guidelines: st
 - Use emojis sparingly but strategically
 - Consider starting with a hook or question
 - LinkedIn users appreciate insights and professional value`,
-    maxOutputTokens: 1500,
+    maxOutputTokens: 3000,
   },
   twitter: {
     maxLength: "280 characters total",
@@ -39,7 +46,7 @@ const PLATFORM_SPECS: Record<SocialPlatform, { maxLength: string; guidelines: st
 - Strong hook in first 8 words
 - Consider thread format if content is complex
 - Use Twitter-style language (brief, conversational)`,
-    maxOutputTokens: 800,
+    maxOutputTokens: 1500,
   },
   facebook: {
     maxLength: "500-800 characters for best engagement",
@@ -49,7 +56,7 @@ const PLATFORM_SPECS: Record<SocialPlatform, { maxLength: string; guidelines: st
 - Ask questions to encourage comments
 - Use emojis to break up text
 - Facebook users like relatable, human content`,
-    maxOutputTokens: 1200,
+    maxOutputTokens: 2500,
   },
   instagram: {
     maxLength: "2,200 characters but first 125 characters are crucial",
@@ -59,7 +66,7 @@ const PLATFORM_SPECS: Record<SocialPlatform, { maxLength: string; guidelines: st
 - Include 5-10 relevant hashtags (can go up to 30)
 - Use emojis throughout
 - Instagram users love authentic, behind-the-scenes content`,
-    maxOutputTokens: 1800,
+    maxOutputTokens: 3000,
   },
 }
 

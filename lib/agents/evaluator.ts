@@ -22,35 +22,38 @@ type ScoreContentPayload = {
   contentId: string
 }
 
+// Real brand rules when a profile exists (migration.md §5 Phase 5 retrieval
+// layer) — kept to a bounded, high-signal subset (avoid-phrases + core style
+// points) rather than dumping the entire terminology/customRules list into
+// every grading prompt.
+async function getBrandRules(userId: string): Promise<string[] | undefined> {
+  const profile = await getBrandProfile(userId)
+  if (!profile) return undefined
+  return [
+    ...profile.voice.avoidPhrases.map((p) => `Must not use: "${p}"`),
+    ...profile.voice.stylePoints.slice(0, 5),
+    ...(profile.styleRules.oxfordComma ? ["Uses the Oxford comma consistently"] : []),
+  ]
+}
+
 async function buildScorecardCall(content: ContentDoc): Promise<{ system: string; prompt: string }> {
+  const brandRules = await getBrandRules(content.userId)
+
   if (content.mode === "landing_page") {
     const callToAction = content.meta?.callToAction ?? ""
     return {
       system: LANDING_PAGE_SCORECARD_SYSTEM,
-      prompt: buildLandingPageScorecardPrompt(content.topic, content.body, callToAction),
+      prompt: buildLandingPageScorecardPrompt(content.topic, content.body, callToAction, brandRules),
     }
   }
   if (content.mode === "case_study") {
     const sourceFacts = content.meta?.sourceFacts ?? ""
     return {
       system: CASE_STUDY_SCORECARD_SYSTEM,
-      prompt: buildCaseStudyScorecardPrompt(content.topic, content.body, sourceFacts),
+      prompt: buildCaseStudyScorecardPrompt(content.topic, content.body, sourceFacts, brandRules),
     }
   }
-  // Default: blog_post's article criteria, plus real brand rules when a
-  // brand profile exists (migration.md §5 Phase 5 retrieval layer) — kept
-  // to a bounded, high-signal subset (avoid-phrases + core style points)
-  // rather than dumping the entire terminology/customRules list into the
-  // grading prompt.
-  const profile = await getBrandProfile(content.userId)
-  const brandRules = profile
-    ? [
-        ...profile.voice.avoidPhrases.map((p) => `Must not use: "${p}"`),
-        ...profile.voice.stylePoints.slice(0, 5),
-        ...(profile.styleRules.oxfordComma ? ["Uses the Oxford comma consistently"] : []),
-      ]
-    : undefined
-
+  // Default: blog_post's article criteria.
   return {
     system: SCORECARD_SYSTEM,
     prompt: buildScorecardPrompt(content.topic, content.body, brandRules),
