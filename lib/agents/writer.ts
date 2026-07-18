@@ -58,6 +58,9 @@ export type ContentDoc = {
   score?: number
   breakdown?: ScorecardBreakdownItem[]
   fixGuidance?: string[]
+  // Soft, non-graded voice/word-choice observations (content-scorecard.ts) —
+  // craft feedback, never factored into score or grade.
+  styleNotes?: string[]
   scoredAt?: Date
   createdAt: Date
   updatedAt: Date

@@ -95,6 +95,7 @@ export async function scoreContent(task: TaskDoc): Promise<Record<string, unknow
         score: object.score,
         breakdown: object.breakdown,
         fixGuidance: object.fixGuidance,
+        styleNotes: object.styleNotes ?? [],
         scoredAt,
         updatedAt: scoredAt,
       },

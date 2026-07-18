@@ -21,6 +21,9 @@ export const scorecardSchema = z.object({
     )
     .min(1),
   fixGuidance: z.array(z.string()),
+  // Soft, non-graded observations (voice/word-choice distinctiveness) — see
+  // buildScorecardPrompt. Never factors into score, grade, or breakdown.
+  styleNotes: z.array(z.string()).optional(),
 })
 
 export const SCORECARD_SYSTEM = `You are a strict, experienced content editor grading a draft before publish.
@@ -49,6 +52,8 @@ ${brandSection}
 Score against exactly these criteria in the breakdown (ten general criteria${brandRules?.length ? ", plus each brand rule listed above" : ""}), plus overall clarity and structure. For each criterion: state whether it was met, and give a one-sentence, specific note (quote the offending phrase if it failed).
 
 fixGuidance should be a short list of concrete, actionable fixes — not general advice. If nothing needs fixing, return an empty array.
+
+Separately, and NOT counted toward the score, grade, or breakdown in any way: note (0-3 short observations) whether the word choice is distinctive or reaches for the obvious phrasing a hundred other pieces would use, and whether copy centers the reader's outcome/feeling rather than just describing features. This is a soft, qualitative craft note, not a rule violation — if the draft is already strong here, return an empty array rather than manufacturing a note.
 
 DRAFT:
 ${body}`
