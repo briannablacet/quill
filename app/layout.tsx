@@ -1,6 +1,7 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Toaster } from '@/components/ui/sonner'
+import { Nav } from '@/components/quill/nav'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -23,6 +24,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-background text-foreground antialiased">
+        <Nav />
         {children}
         <Toaster position="bottom-left" />
         {process.env.NODE_ENV === 'production' && <Analytics />}

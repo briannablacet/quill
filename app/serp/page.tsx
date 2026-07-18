@@ -1,31 +1,31 @@
 import { redirect } from "next/navigation"
 import { getUserId } from "@/lib/session"
 import { getDb } from "@/lib/mongodb"
-import { Workspace } from "@/components/quill/workspace"
-import type { ContentItem } from "@/components/quill/types"
+import { SerpPanel } from "@/components/quill/serp-panel"
+import type { SerpSnapshotDoc } from "@/lib/agents/serp-monitor"
 
 export const dynamic = "force-dynamic"
 
-export default async function Page() {
+export default async function SerpPage() {
   const userId = await getUserId()
   if (!userId) redirect("/sign-in")
 
   const db = await getDb()
   const docs = await db
-    .collection("content")
+    .collection("serp_snapshots")
     .find({ userId })
-    .sort({ createdAt: -1 })
+    .sort({ capturedAt: -1 })
     .limit(50)
     .toArray()
 
-  const initialContent: ContentItem[] = JSON.parse(JSON.stringify(docs))
+  const initialItems: SerpSnapshotDoc[] = JSON.parse(JSON.stringify(docs))
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-10">
       <p className="max-w-[58ch] text-[15.5px] text-muted-foreground">
-        Writes, grades, and rewrites its own drafts — five content modes, real Scorecard grading, automatic regeneration.
+        Tracks who ranks for a keyword over time and surfaces what changed since the last check.
       </p>
-      <Workspace initialContent={initialContent} />
+      <SerpPanel initialItems={initialItems} />
     </main>
   )
 }

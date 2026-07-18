@@ -1,31 +1,31 @@
 import { redirect } from "next/navigation"
 import { getUserId } from "@/lib/session"
 import { getDb } from "@/lib/mongodb"
-import { Workspace } from "@/components/quill/workspace"
-import type { ContentItem } from "@/components/quill/types"
+import { IdeasPanel } from "@/components/quill/ideas-panel"
+import type { IdeationDoc } from "@/lib/agents/ideation"
 
 export const dynamic = "force-dynamic"
 
-export default async function Page() {
+export default async function IdeasPage() {
   const userId = await getUserId()
   if (!userId) redirect("/sign-in")
 
   const db = await getDb()
   const docs = await db
-    .collection("content")
+    .collection("ideas")
     .find({ userId })
     .sort({ createdAt: -1 })
     .limit(50)
     .toArray()
 
-  const initialContent: ContentItem[] = JSON.parse(JSON.stringify(docs))
+  const initialItems: IdeationDoc[] = JSON.parse(JSON.stringify(docs))
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-10">
       <p className="max-w-[58ch] text-[15.5px] text-muted-foreground">
-        Writes, grades, and rewrites its own drafts — five content modes, real Scorecard grading, automatic regeneration.
+        Suggests what to write next, based on what actually scored well in your real Scorecard data.
       </p>
-      <Workspace initialContent={initialContent} />
+      <IdeasPanel initialItems={initialItems} />
     </main>
   )
 }
