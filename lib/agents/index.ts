@@ -53,9 +53,25 @@ export async function enqueueFollowUps(task: TaskDoc, result: Record<string, unk
 
   if (task.type === "score_content" && typeof result.contentId === "string") {
     const db = await getDb()
-    const content = await db.collection<ContentDoc>("content").findOne({ contentId: result.contentId })
+    const contentCollection = db.collection<ContentDoc>("content")
+    const content = await contentCollection.findOne({ contentId: result.contentId })
 
     if (!content) return
+
+    // Regeneration safety net: a rewrite that fixes every flagged issue can
+    // still introduce new ones and score *worse* overall (verified live —
+    // migration.md §5). Nothing else in the system would otherwise catch
+    // that, so record the outcome explicitly rather than letting a worse
+    // draft silently stand as "the" result.
+    if (content.regeneratedFrom && typeof content.score === "number") {
+      const original = await contentCollection.findOne({ contentId: content.regeneratedFrom })
+      if (original && typeof original.score === "number") {
+        const regenerationOutcome: "improved" | "regressed" | "unchanged" =
+          content.score > original.score ? "improved" : content.score < original.score ? "regressed" : "unchanged"
+        await contentCollection.updateOne({ contentId: content.contentId }, { $set: { regenerationOutcome, previousScore: original.score } })
+      }
+    }
+
     // Cap at one auto-fix pass — don't chain regenerations of regenerations.
     if (content.regeneratedFrom) return
     if (typeof content.score !== "number" || content.score >= REGENERATION_SCORE_THRESHOLD) return

@@ -41,6 +41,11 @@ export type ContentDoc = {
   // Set when this draft is an orchestrator-triggered rewrite of a lower-
   // scoring earlier draft.
   regeneratedFrom?: string
+  // Set after a regenerated draft is scored — whether the rewrite actually
+  // beat the score it was regenerating away from (a rewrite can fix every
+  // flagged issue and still score lower by introducing new problems).
+  regenerationOutcome?: "improved" | "regressed" | "unchanged"
+  previousScore?: number
   // Mode-specific structured context the evaluator needs at scoring time
   // (e.g. landing_page's exact CTA text, case_study's source facts) that
   // doesn't fit the generic topic/brief/body shape.

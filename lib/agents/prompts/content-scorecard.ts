@@ -41,8 +41,11 @@ It was generated under these constraints — check compliance with each one spec
 - Avoids "revolutionize," "thrilled," "thrill," "cutting-edge," and similar overused marketing language
 - Ends with a single, clear, imperative call-to-action as the final line
 - No fabricated statistics, quotes, customer names, or specific claims that read as invented rather than general knowledge
+- Em dash cadence: no more than one em dash per paragraph, never two in the same sentence or back-to-back sentences
+- No choppy sentence sequences — especially in definitional/explanatory passages, avoid strings of short, similarly-structured sentences that read like unbulleted bullet points (a common model habit); prose should flow with varied sentence length and real connective structure
+- No duplicated phrasing — the same distinctive word, phrase, or sentence structure should not repeat across multiple sections
 ${brandSection}
-Score against exactly these criteria in the breakdown (six general criteria${brandRules?.length ? ", plus each brand rule listed above" : ""}), plus overall clarity and structure. For each criterion: state whether it was met, and give a one-sentence, specific note (quote the offending phrase if it failed).
+Score against exactly these criteria in the breakdown (nine general criteria${brandRules?.length ? ", plus each brand rule listed above" : ""}), plus overall clarity and structure. For each criterion: state whether it was met, and give a one-sentence, specific note (quote the offending phrase if it failed).
 
 fixGuidance should be a short list of concrete, actionable fixes — not general advice. If nothing needs fixing, return an empty array.
 
