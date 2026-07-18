@@ -1,40 +1,32 @@
-import { getDirectives, getAgentConfigs, getMatches, getCoverLetters } from "@/lib/actions"
-import { Dashboard } from "@/components/cos/dashboard"
-import { auth } from "@/lib/auth"
-import { headers } from "next/headers"
 import { redirect } from "next/navigation"
+import { getUserId } from "@/lib/session"
+import { getDb } from "@/lib/mongodb"
+import { Workspace } from "@/components/quill/workspace"
+import type { ContentItem } from "@/components/quill/types"
 
 export const dynamic = "force-dynamic"
 
 export default async function Page() {
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!session?.user) redirect("/sign-in")
+  const userId = await getUserId()
+  if (!userId) redirect("/sign-in")
 
-  const [directives, agentConfigs, matches, coverLetters] = await Promise.all([
-    getDirectives(),
-    getAgentConfigs(),
-    getMatches(),
-    getCoverLetters(),
-  ])
+  const db = await getDb()
+  const docs = await db
+    .collection("content")
+    .find({ userId })
+    .sort({ createdAt: -1 })
+    .limit(50)
+    .toArray()
 
-  // VERCEL_PROJECT_PRODUCTION_URL is always the stable production domain.
-  // VERCEL_URL changes per-deployment (preview URLs) — never use it for the bookmarklet.
-  const appUrl =
-    process.env.NEXT_PUBLIC_APP_URL ??
-    (process.env.VERCEL_PROJECT_PRODUCTION_URL
-      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-      : "https://briannasnirvana.com")
-  const bookmarkletSecret = process.env.BOOKMARKLET_SECRET ?? "cos-import"
+  const initialContent: ContentItem[] = JSON.parse(JSON.stringify(docs))
 
   return (
-    <Dashboard
-      initialDirectives={directives}
-      initialAgentConfigs={agentConfigs}
-      initialMatches={matches}
-      initialCoverLetters={coverLetters}
-      appUrl={appUrl}
-      bookmarkletSecret={bookmarkletSecret}
-      user={{ name: session.user.name, email: session.user.email }}
-    />
+    <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-10">
+      <div>
+        <h1 className="text-2xl font-semibold">Quill</h1>
+        <p className="text-sm text-muted-foreground">An agentic content marketing operating system.</p>
+      </div>
+      <Workspace initialContent={initialContent} />
+    </main>
   )
 }

@@ -11,9 +11,9 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Chief of Staff - Agentic Career Platform',
+  title: 'Quill - Agentic Content Marketing OS',
   description:
-    'Your autonomous AI Chief of Staff. Sub-agents scan the market, score matches, network on your behalf, and draft thought leadership — all day, every day.',
+    'Quill writes, grades, and improves marketing content on its own — a real task queue, a writer agent, and an evaluator that catches and fixes its own mistakes.',
   generator: 'v0.app',
 }
 

@@ -69,7 +69,7 @@ export type ContentDoc = {
 // Adding a new content mode = one entry here + one prompt file. This is the
 // extraction point migration.md §5 Phase 3 grows: one Skribil mode at a time.
 
-type BattlecardPayload = {
+export type BattlecardPayload = {
   competitor: string // name or URL, resolved the same way as fetch_competitor_content
   positioning: string
   ourAdvantages?: string
