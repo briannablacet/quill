@@ -3,16 +3,8 @@
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ScorecardView } from "./scorecard-view"
+import { ScorecardView, GradePill } from "./scorecard-view"
 import { MODE_LABEL, type ContentItem } from "./types"
-
-const GRADE_VARIANT: Record<string, "default" | "secondary" | "destructive"> = {
-  A: "default",
-  B: "default",
-  C: "secondary",
-  D: "destructive",
-  F: "destructive",
-}
 
 export function ContentHistory({ items }: { items: ContentItem[] }) {
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -30,10 +22,10 @@ export function ContentHistory({ items }: { items: ContentItem[] }) {
             onClick={() => setExpanded(expanded === item.contentId ? null : item.contentId)}
           >
             <CardTitle className="flex items-center justify-between gap-2">
-              <span className="truncate">{item.topic}</span>
+              <span className="truncate font-serif text-lg font-semibold">{item.topic}</span>
               <span className="flex shrink-0 items-center gap-2">
                 <Badge variant="outline">{MODE_LABEL[item.mode]}</Badge>
-                {item.grade && <Badge variant={GRADE_VARIANT[item.grade] ?? "secondary"}>{item.grade}</Badge>}
+                {item.grade && <GradePill grade={item.grade} size="sm" />}
               </span>
             </CardTitle>
           </CardHeader>
@@ -42,7 +34,7 @@ export function ContentHistory({ items }: { items: ContentItem[] }) {
               <ScorecardView content={item} />
               <div className="flex flex-col gap-1.5 rounded-lg border border-border p-3">
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Draft</span>
-                <pre className="max-h-96 overflow-y-auto whitespace-pre-wrap font-sans text-sm">
+                <pre className="max-h-96 overflow-y-auto whitespace-pre-wrap font-serif text-base leading-relaxed">
                   {item.items ? item.items.join("\n\n") : item.body}
                 </pre>
               </div>

@@ -173,13 +173,13 @@ export function GeneratePanel({ onGenerated }: { onGenerated?: (item: ContentIte
       {content && (
         <Card>
           <CardHeader>
-            <CardTitle>{content.topic}</CardTitle>
+            <CardTitle className="font-serif text-lg font-semibold">{content.topic}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <ScorecardView content={content} />
             <div className="flex flex-col gap-1.5 rounded-lg border border-border p-3">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Draft</span>
-              <pre className="max-h-96 overflow-y-auto whitespace-pre-wrap font-sans text-sm">
+              <pre className="max-h-96 overflow-y-auto whitespace-pre-wrap font-serif text-base leading-relaxed">
                 {content.items ? content.items.join("\n\n") : content.body}
               </pre>
             </div>

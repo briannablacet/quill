@@ -1,33 +1,54 @@
-import { Badge } from "@/components/ui/badge"
 import { Progress, ProgressTrack, ProgressIndicator } from "@/components/ui/progress"
 import type { ContentItem } from "./types"
 
-const GRADE_VARIANT: Record<string, "default" | "secondary" | "destructive"> = {
-  A: "default",
-  B: "default",
-  C: "secondary",
-  D: "destructive",
-  F: "destructive",
+// A/B read as a pass, C is the neutral middle, D/F read as a fail — matches
+// the soft-tint pass/fail treatment from the approved canvas mockup rather
+// than a generic red/amber/green traffic light.
+const GRADE_TONE: Record<string, "good" | "warn" | "bad"> = {
+  A: "good",
+  B: "good",
+  C: "warn",
+  D: "bad",
+  F: "bad",
+}
+
+const TONE_CLASSES: Record<"good" | "warn" | "bad", { bg: string; text: string }> = {
+  good: { bg: "bg-success/15", text: "text-success" },
+  warn: { bg: "bg-warning/15", text: "text-warning" },
+  bad: { bg: "bg-destructive/15", text: "text-destructive" },
+}
+
+// Shared circular grade badge — used here and in the History list, so a
+// grade always reads the same way wherever it shows up.
+export function GradePill({ grade, size = "md" }: { grade: string; size?: "sm" | "md" }) {
+  const tone = GRADE_TONE[grade] ?? "warn"
+  const dimensions = size === "sm" ? "size-6 text-xs" : "size-[30px] text-sm"
+  return (
+    <span
+      className={`flex shrink-0 items-center justify-center rounded-full font-bold ${dimensions} ${TONE_CLASSES[tone].bg} ${TONE_CLASSES[tone].text}`}
+    >
+      {grade}
+    </span>
+  )
 }
 
 export function ScorecardView({ content }: { content: ContentItem }) {
   const hasScore = typeof content.score === "number" && content.grade
+  const tone = content.grade ? GRADE_TONE[content.grade] ?? "warn" : "warn"
 
   return (
     <div className="flex flex-col gap-4">
       {hasScore && (
         <div className="flex items-center gap-3">
-          <Badge variant={GRADE_VARIANT[content.grade!] ?? "secondary"} className="h-7 px-3 text-sm">
-            {content.grade}
-          </Badge>
+          <GradePill grade={content.grade!} />
           <div className="flex-1">
             <div className="mb-1 flex items-baseline justify-between text-sm">
-              <span className="font-medium">{content.score}/100</span>
+              <span className="font-medium tabular-nums">{content.score}/100</span>
               {content.regenerationOutcome && (
                 <span
                   className={
                     content.regenerationOutcome === "improved"
-                      ? "text-emerald-500"
+                      ? "text-success"
                       : content.regenerationOutcome === "regressed"
                         ? "text-destructive"
                         : "text-muted-foreground"
@@ -41,11 +62,7 @@ export function ScorecardView({ content }: { content: ContentItem }) {
             </div>
             <Progress value={content.score ?? null}>
               <ProgressTrack>
-                <ProgressIndicator
-                  className={
-                    (content.score ?? 0) >= 80 ? "bg-emerald-500" : (content.score ?? 0) >= 60 ? "bg-amber-500" : "bg-destructive"
-                  }
-                />
+                <ProgressIndicator className={TONE_CLASSES[tone].text.replace("text-", "bg-")} />
               </ProgressTrack>
             </Progress>
           </div>
@@ -58,7 +75,7 @@ export function ScorecardView({ content }: { content: ContentItem }) {
           <ul className="flex flex-col gap-1.5">
             {content.breakdown.map((b, i) => (
               <li key={i} className="flex gap-2 text-sm">
-                <span className={b.met ? "text-emerald-500" : "text-destructive"}>{b.met ? "✓" : "✗"}</span>
+                <span className={b.met ? "text-success" : "text-destructive"}>{b.met ? "✓" : "✗"}</span>
                 <span>
                   <span className="font-medium">{b.criterion}</span>
                   <span className="text-muted-foreground"> — {b.note}</span>

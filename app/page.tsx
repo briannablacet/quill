@@ -23,8 +23,13 @@ export default async function Page() {
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-10">
       <div>
-        <h1 className="text-2xl font-semibold">Quill</h1>
-        <p className="text-sm text-muted-foreground">An agentic content marketing operating system.</p>
+        <div className="flex items-baseline gap-2.5">
+          <span className="font-serif text-[34px] font-semibold tracking-tight">Quill</span>
+          <span className="text-[11px] tracking-[0.08em] text-muted-foreground uppercase">Content Studio</span>
+        </div>
+        <p className="mt-2 max-w-[58ch] text-[15.5px] text-muted-foreground">
+          An agentic content marketing operating system — it writes, grades, and rewrites its own drafts.
+        </p>
       </div>
       <Workspace initialContent={initialContent} />
     </main>
