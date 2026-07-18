@@ -282,6 +282,16 @@ export async function generateContent(task: TaskDoc): Promise<Record<string, unk
     throw new Error(`Unknown content mode: ${mode}`)
   }
 
+  // The model occasionally returns an empty response (observed live during
+  // regeneration testing) with no error — nothing upstream catches that, so
+  // an empty draft would otherwise persist as a normal "done" ContentDoc and
+  // silently score 0/F later. Treat it as a real task failure instead, so
+  // the existing retry-with-backoff logic (lib/tasks.ts) handles it.
+  const hasEmptyOutput = items ? items.length === 0 : !body || body.trim().length === 0
+  if (hasEmptyOutput) {
+    throw new Error(`${mode} generation returned no content — the model returned an empty response`)
+  }
+
   const db = await getDb()
   const contentId = randomUUID()
   const now = new Date()
