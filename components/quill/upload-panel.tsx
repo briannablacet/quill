@@ -117,6 +117,17 @@ export function UploadPanel({ onReviewed }: { onReviewed?: (item: ContentItem) =
 
   return (
     <div className="flex flex-col gap-4">
+      {content && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-serif text-lg font-semibold">{content.topic}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ScorecardView content={content} />
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Review Existing Content</CardTitle>
@@ -190,17 +201,6 @@ export function UploadPanel({ onReviewed }: { onReviewed?: (item: ContentItem) =
           {error && <p className="text-sm text-destructive">{error}</p>}
         </CardContent>
       </Card>
-
-      {content && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-serif text-lg font-semibold">{content.topic}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ScorecardView content={content} />
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }

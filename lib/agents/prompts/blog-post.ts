@@ -60,7 +60,9 @@ STRUCTURE:
 - Strong closing paragraph (~150 words) that naturally leads to the CTA
 
 TARGET AUDIENCE: ${input.targetAudience ?? "general readers of this content"}
-STYLE BANS: Avoid clichés like "Imagine this". Never use "Introduction" or "Conclusion" as subheadings. Avoid "revolutionize," "thrilled," "thrill," or "cutting-edge". No horizontal rules/dividers.
+STYLE BANS: Avoid clichés like "Imagine this". Never use "Introduction" or "Conclusion" as subheadings. No horizontal rules/dividers.
+Avoid these words/roots as ordinary vocabulary (quoting them verbatim inside a real, existing proper noun or job title — e.g. "Director of AI Transformation" — is fine; using the root word to describe or characterize something is not): revolutionize/revolutionizing/revolution, transform/transforming/transformation, disrupt/disrupting/disruption, reinvent/reinventing, evolve/evolving/evolution, unlock/unlocking, elevate/elevating, accelerate, amplify/amplified, empower/empowering/empowerment, master/mastering/mastery, unleash/unleashing, unchain/unchaining, leverage/leveraging, synergy/synergize, paradigm, innovative, cutting-edge, next-level, game-changing, breakthrough, seamless, scalable, robust, dynamic, strategic, holistic, comprehensive, integrated, streamlined, optimize/optimizing, maximize, thrilled, thrill.
+If the topic itself centers on one of these concepts (e.g. a topic about "transformation"), find a different word for the concept throughout the piece (e.g. "adoption," "shift," "overhaul") rather than repeating the banned root.
 
 CONTENT RULE: Be vendor-neutral for ~90% of the piece. Focus on industry insights, best practices, and valuable advice. Do NOT mention products/services/eBooks until the very end.
 ${ctaBlock}
