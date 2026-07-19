@@ -9,6 +9,7 @@ import { getDb } from "@/lib/mongodb"
 export type TaskType =
   | "generate_content"
   | "score_content"
+  | "revise_content"
   | "fetch_competitor_content"
   | "monitor_serp"
   | "analyze_performance"

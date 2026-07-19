@@ -37,6 +37,11 @@ export function UploadPanel({ onReviewed }: { onReviewed?: (item: ContentItem) =
   const pollCount = useRef(0)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
+  const [fixing, setFixing] = useState(false)
+  const [fixError, setFixError] = useState<string | null>(null)
+  const fixPollCount = useRef(0)
+  const fixIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
   const stopPolling = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current)
@@ -44,7 +49,15 @@ export function UploadPanel({ onReviewed }: { onReviewed?: (item: ContentItem) =
     }
   }, [])
 
+  const stopFixPolling = useCallback(() => {
+    if (fixIntervalRef.current) {
+      clearInterval(fixIntervalRef.current)
+      fixIntervalRef.current = null
+    }
+  }, [])
+
   useEffect(() => stopPolling, [stopPolling])
+  useEffect(() => stopFixPolling, [stopFixPolling])
 
   const handleFile = async (file: File | null) => {
     if (!file) return
@@ -111,6 +124,64 @@ export function UploadPanel({ onReviewed }: { onReviewed?: (item: ContentItem) =
     }, POLL_INTERVAL_MS)
   }
 
+  const handleFix = async () => {
+    if (!content) return
+    setFixError(null)
+    setFixing(true)
+    fixPollCount.current = 0
+
+    const res = await fetch("/api/content/revise", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contentId: content.contentId }),
+    })
+
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}))
+      setFixError(errBody.error ?? "Failed to start fix")
+      setFixing(false)
+      return
+    }
+
+    const { taskId } = await res.json()
+
+    fixIntervalRef.current = setInterval(async () => {
+      fixPollCount.current += 1
+      if (fixPollCount.current > MAX_POLLS) {
+        stopFixPolling()
+        setFixError("Taking longer than expected — check View History shortly.")
+        setFixing(false)
+        return
+      }
+
+      nudgeWorker()
+
+      const taskRes = await fetch(`/api/tasks/${taskId}`)
+      if (!taskRes.ok) return
+      const task = await taskRes.json()
+      if (task.status === "failed") {
+        stopFixPolling()
+        setFixError(task.error ?? "Fix failed")
+        setFixing(false)
+        return
+      }
+      if (task.status !== "done" || typeof task.result?.contentId !== "string") return
+
+      // revise_content is done — wait for the auto-enqueued score_content
+      // pass on the revised draft before showing it, so what appears is a
+      // real, graded result rather than an unscored in-between state.
+      const revisedRes = await fetch(`/api/content/${task.result.contentId}`)
+      if (!revisedRes.ok) return
+      const revised: ContentItem = await revisedRes.json()
+      if (revised.scoredAt) {
+        stopFixPolling()
+        setContent(revised)
+        setFixing(false)
+        onReviewed?.(revised)
+      }
+    }, POLL_INTERVAL_MS)
+  }
+
   const valid =
     topic.trim().length > 0 &&
     body.trim().length > 0 &&
@@ -123,8 +194,19 @@ export function UploadPanel({ onReviewed }: { onReviewed?: (item: ContentItem) =
           <CardHeader>
             <CardTitle className="font-serif text-lg font-semibold">{content.topic}</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-col gap-4">
             <ScorecardView content={content} />
+            {content.fixGuidance && content.fixGuidance.length > 0 && (
+              <div className="flex flex-col gap-1.5">
+                <Button type="button" variant="outline" onClick={handleFix} disabled={fixing} className="self-start">
+                  {fixing ? "Fixing…" : "Fix This"}
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Rewrites the piece to resolve the Fix Guidance above, then re-scores it.
+                </p>
+                {fixError && <p className="text-sm text-destructive">{fixError}</p>}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

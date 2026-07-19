@@ -13,6 +13,14 @@ import { nudgeWorker } from "./types"
 const POLL_INTERVAL_MS = 1500
 const MAX_POLLS = 40 // ~1 minute — a single search + diff, no LLM call
 
+function domainOf(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "")
+  } catch {
+    return url
+  }
+}
+
 type LastRun = {
   snapshot: SerpSnapshotDoc
   changes: SerpChange[]
@@ -150,10 +158,12 @@ export function SerpPanel({ initialItems }: { initialItems: SerpSnapshotDoc[] })
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 {lastRun.fromHistory ? "Results" : "Current results"}
               </span>
-              <ol className="text-sm">
+              <ol className="flex flex-col gap-1 text-sm">
                 {lastRun.snapshot.results.map((r) => (
-                  <li key={r.link} className="truncate">
-                    {r.position}. {r.title}
+                  <li key={r.link} className="flex items-baseline gap-2">
+                    <span className="shrink-0 tabular-nums text-muted-foreground">{r.position}.</span>
+                    <span className="truncate">{r.title}</span>
+                    <span className="shrink-0 text-xs text-muted-foreground">({domainOf(r.link)})</span>
                   </li>
                 ))}
               </ol>

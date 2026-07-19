@@ -3,6 +3,7 @@ import { enqueueTask } from "@/lib/tasks"
 import { getDb } from "@/lib/mongodb"
 import { generateContent, type ContentDoc } from "./writer"
 import { scoreContent } from "./evaluator"
+import { reviseContent } from "./reviser"
 import { fetchCompetitorContent } from "./competitive-intel"
 import { monitorSerp } from "./serp-monitor"
 import { suggestIdeas } from "./ideation"
@@ -18,6 +19,8 @@ export async function runTask(task: TaskDoc): Promise<Record<string, unknown>> {
       return generateContent(task)
     case "score_content":
       return scoreContent(task)
+    case "revise_content":
+      return reviseContent(task)
     case "fetch_competitor_content":
       return fetchCompetitorContent(task)
     case "monitor_serp":
@@ -51,6 +54,14 @@ export async function enqueueFollowUps(task: TaskDoc, result: Record<string, unk
     return
   }
 
+  // The explicit, user-triggered counterpart to the automatic regeneration
+  // below — same "write a new draft, then score it" shape, just kicked off
+  // by a "Fix This" click on reviewed content instead of a low auto-score.
+  if (task.type === "revise_content" && typeof result.contentId === "string") {
+    await enqueueTask(task.userId, "score_content", { contentId: result.contentId })
+    return
+  }
+
   if (task.type === "score_content" && typeof result.contentId === "string") {
     const db = await getDb()
     const contentCollection = db.collection<ContentDoc>("content")
@@ -58,16 +69,13 @@ export async function enqueueFollowUps(task: TaskDoc, result: Record<string, unk
 
     if (!content) return
 
-    // Uploaded content is scored for review, not auto-rewritten — rewriting
-    // a piece the user brought in for feedback isn't what "review" means,
-    // even if it scores below the auto-fix threshold below.
-    if (content.origin === "uploaded") return
-
     // Regeneration safety net: a rewrite that fixes every flagged issue can
     // still introduce new ones and score *worse* overall (verified live —
     // migration.md §5). Nothing else in the system would otherwise catch
     // that, so record the outcome explicitly rather than letting a worse
-    // draft silently stand as "the" result.
+    // draft silently stand as "the" result. Runs regardless of origin — an
+    // explicit "Fix This" revision deserves the same improved/regressed
+    // signal an automatic regeneration gets.
     if (content.regeneratedFrom && typeof content.score === "number") {
       const original = await contentCollection.findOne({ contentId: content.regeneratedFrom })
       if (original && typeof original.score === "number") {
@@ -76,6 +84,11 @@ export async function enqueueFollowUps(task: TaskDoc, result: Record<string, unk
         await contentCollection.updateOne({ contentId: content.contentId }, { $set: { regenerationOutcome, previousScore: original.score } })
       }
     }
+
+    // Uploaded content (including a "Fix This" revision of it) is never
+    // *automatically* rewritten again — that decision is made explicitly by
+    // the user clicking "Fix This," not by the orchestrator on its own.
+    if (content.origin === "uploaded") return
 
     // Cap at one auto-fix pass — don't chain regenerations of regenerations.
     if (content.regeneratedFrom) return

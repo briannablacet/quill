@@ -26,7 +26,7 @@ type ScoreContentPayload = {
 // layer) — kept to a bounded, high-signal subset (avoid-phrases + core style
 // points) rather than dumping the entire terminology/customRules list into
 // every grading prompt.
-async function getBrandRules(userId: string): Promise<string[] | undefined> {
+export async function getBrandRules(userId: string): Promise<string[] | undefined> {
   const profile = await getBrandProfile(userId)
   if (!profile) return undefined
   return [
