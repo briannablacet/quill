@@ -15,14 +15,38 @@ export const maxDuration = 60
 
 const BATCH_SIZE = 5
 
-// Leaves a margin under maxDuration so this route always finishes cleanly
-// on its own instead of being killed mid-task by Vercel's hard timeout.
-// Without this, a batch of several slow tasks (a full blog generation, a
-// multi-competitor analysis) can cumulatively blow past 60s — Vercel then
-// kills the function while a task is mid-flight, abandoning it in
-// "running" status forever (confirmed live: score_content tasks stuck for
-// 20+ minutes, retried repeatedly, never completing — 2026-07-19).
-const TIME_BUDGET_MS = 45_000
+// Total wall-clock ceiling for this invocation, kept under Vercel's 60s
+// hard limit so the route can always finish and respond on its own.
+const FUNCTION_BUDGET_MS = 55_000
+
+// Hard cap on a single task. Confirmed live (2026-07-19): even with a
+// batch-level time budget, one individually slow task (a model call that's
+// just having a slow moment) can itself exceed 60s — Vercel then kills the
+// whole function mid-write, abandoning the task in "running" forever, since
+// it never reaches failTask. Racing runTask() against this timeout means
+// OUR code always gets there first: a task that would've overrun instead
+// gets recorded as a real failure and retried with backoff, never silently
+// stuck.
+const TASK_TIMEOUT_MS = 50_000
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error(`${label} exceeded ${ms}ms — treating as failed rather than risking the platform killing it mid-write`)),
+      ms
+    )
+    promise.then(
+      (v) => {
+        clearTimeout(timer)
+        resolve(v)
+      },
+      (e) => {
+        clearTimeout(timer)
+        reject(e)
+      }
+    )
+  })
+}
 
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET
@@ -37,7 +61,9 @@ export async function GET(req: NextRequest) {
   const results: { taskId: string; type: string; status: "done" | "failed" }[] = []
 
   for (let i = 0; i < BATCH_SIZE; i++) {
-    if (Date.now() - startedAt > TIME_BUDGET_MS) break
+    // Only start another task if there's enough budget left for it to run
+    // to its own full timeout without risking the function-level ceiling.
+    if (Date.now() - startedAt > FUNCTION_BUDGET_MS - TASK_TIMEOUT_MS) break
 
     const task = await claimNextTask()
     if (!task) break
@@ -53,7 +79,7 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-      const result = await runTask(task)
+      const result = await withTimeout(runTask(task), TASK_TIMEOUT_MS, `${task.type} task`)
       await completeTask(task.taskId, result)
       await enqueueFollowUps(task, result)
       results.push({ taskId: task.taskId, type: task.type, status: "done" })
