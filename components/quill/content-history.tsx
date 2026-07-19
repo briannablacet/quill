@@ -24,6 +24,7 @@ export function ContentHistory({ items }: { items: ContentItem[] }) {
             <CardTitle className="flex items-center justify-between gap-2">
               <span className="truncate font-serif text-lg font-semibold">{item.topic}</span>
               <span className="flex shrink-0 items-center gap-2">
+                {item.origin === "uploaded" && <Badge variant="secondary">Uploaded</Badge>}
                 <Badge variant="outline">{MODE_LABEL[item.mode]}</Badge>
                 {item.grade && <GradePill grade={item.grade} size="sm" />}
               </span>

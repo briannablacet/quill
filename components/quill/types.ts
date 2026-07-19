@@ -36,6 +36,7 @@ export type ContentItem = {
   previousScore?: number
   meta?: Record<string, string>
   status: "draft" | "published" | "archived"
+  origin?: "generated" | "uploaded"
   grade?: "A" | "B" | "C" | "D" | "F"
   score?: number
   breakdown?: ScorecardBreakdownItem[]

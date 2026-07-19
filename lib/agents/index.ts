@@ -58,6 +58,11 @@ export async function enqueueFollowUps(task: TaskDoc, result: Record<string, unk
 
     if (!content) return
 
+    // Uploaded content is scored for review, not auto-rewritten — rewriting
+    // a piece the user brought in for feedback isn't what "review" means,
+    // even if it scores below the auto-fix threshold below.
+    if (content.origin === "uploaded") return
+
     // Regeneration safety net: a rewrite that fixes every flagged issue can
     // still introduce new ones and score *worse* overall (verified live —
     // migration.md §5). Nothing else in the system would otherwise catch
