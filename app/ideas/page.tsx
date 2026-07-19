@@ -23,7 +23,7 @@ export default async function IdeasPage() {
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 pt-4 pb-10">
       <p className="text-[15.5px] text-muted-foreground">
-        Suggests what to write next, based on what actually scored well in your real Scorecard data.
+        Suggests what to write next to help you rank on the keywords you're tracking in SERP Monitor.
       </p>
       <IdeasPanel initialItems={initialItems} />
     </main>

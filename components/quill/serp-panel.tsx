@@ -18,6 +18,11 @@ type LastRun = {
   isFirstSnapshot: boolean
   ownDomain?: string
   ownPosition?: number | null
+  // True when this card is showing a past snapshot picked from History
+  // rather than the result of a check just run — changes/isFirstSnapshot
+  // don't mean anything for a plain historical view, so the messaging
+  // around them is skipped in that case.
+  fromHistory?: boolean
 }
 
 export function SerpPanel({ initialItems }: { initialItems: SerpSnapshotDoc[] }) {
@@ -113,6 +118,11 @@ export function SerpPanel({ initialItems }: { initialItems: SerpSnapshotDoc[] })
         <Card>
           <CardHeader>
             <CardTitle className="font-serif">{lastRun.snapshot.keyword}</CardTitle>
+            {lastRun.fromHistory && (
+              <p className="text-xs text-muted-foreground">
+                Snapshot from {new Date(lastRun.snapshot.capturedAt).toLocaleString()}
+              </p>
+            )}
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             {lastRun.ownDomain && (
@@ -121,7 +131,7 @@ export function SerpPanel({ initialItems }: { initialItems: SerpSnapshotDoc[] })
                 {lastRun.ownPosition ? `#${lastRun.ownPosition}` : "not in the top results"}
               </p>
             )}
-            {lastRun.isFirstSnapshot ? (
+            {lastRun.fromHistory ? null : lastRun.isFirstSnapshot ? (
               <p className="text-sm text-muted-foreground">First snapshot for this keyword — nothing to compare against yet.</p>
             ) : lastRun.changes.length === 0 ? (
               <p className="text-sm text-muted-foreground">No ranking changes since the last check.</p>
@@ -136,7 +146,9 @@ export function SerpPanel({ initialItems }: { initialItems: SerpSnapshotDoc[] })
               </ul>
             )}
             <div className="mt-2 flex flex-col gap-1">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Current results</span>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                {lastRun.fromHistory ? "Results" : "Current results"}
+              </span>
               <ol className="text-sm">
                 {lastRun.snapshot.results.map((r) => (
                   <li key={r.link} className="truncate">
@@ -153,10 +165,24 @@ export function SerpPanel({ initialItems }: { initialItems: SerpSnapshotDoc[] })
         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">History</span>
         {items.length === 0 && <p className="text-sm text-muted-foreground">No snapshots yet.</p>}
         {items.map((item) => (
-          <div key={item.snapshotId} className="flex items-center justify-between rounded-lg border border-border p-3 text-sm">
+          <button
+            key={item.snapshotId}
+            type="button"
+            onClick={() =>
+              setLastRun({
+                snapshot: item,
+                changes: [],
+                isFirstSnapshot: false,
+                ownDomain: item.ownDomain,
+                ownPosition: item.ownPosition,
+                fromHistory: true,
+              })
+            }
+            className="flex items-center justify-between rounded-lg border border-border p-3 text-left text-sm transition-colors hover:border-primary hover:bg-muted/50"
+          >
             <span className="font-serif">{item.keyword}</span>
             <span className="text-xs text-muted-foreground">{new Date(item.capturedAt).toLocaleString()}</span>
-          </div>
+          </button>
         ))}
       </div>
     </div>

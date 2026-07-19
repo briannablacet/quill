@@ -74,7 +74,8 @@ export function IdeasPanel({ initialItems }: { initialItems: IdeationDoc[] }) {
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <p className="text-sm text-muted-foreground">
-            Works from real Scorecard data — what actually scored well and why, not generic advice.
+            Works from real SERP data — the keywords you're tracking in SERP Monitor and who's currently ranking for
+            them — not the Scorecard, which grades writing quality, not what's worth writing next.
           </p>
           <Button onClick={handleSubmit} disabled={status === "working"}>
             {status === "working" ? "Thinking…" : "Suggest Ideas"}
@@ -94,6 +95,7 @@ export function IdeasPanel({ initialItems }: { initialItems: IdeationDoc[] }) {
                     <span className="font-serif text-base font-semibold">{idea.topic}</span>
                     <Badge variant="outline">{MODE_LABEL[idea.mode]}</Badge>
                   </div>
+                  <span className="text-xs font-medium text-muted-foreground">Targeting: &ldquo;{idea.targetKeyword}&rdquo;</span>
                   <p className="text-sm text-muted-foreground">{idea.rationale}</p>
                 </div>
               ))}
