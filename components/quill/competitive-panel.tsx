@@ -7,8 +7,50 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import type { CompetitiveIntelDoc } from "@/lib/agents/competitive-intel"
+import type { CompetitiveIntelDoc, CompetitorAnalysis } from "@/lib/agents/competitive-intel"
 import { nudgeWorker } from "./types"
+
+function CompetitorCard({ c, isOwn }: { c: CompetitorAnalysis; isOwn?: boolean }) {
+  return (
+    <div className={`flex flex-col gap-1.5 rounded-lg border p-3 ${isOwn ? "border-primary" : "border-border"}`}>
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="flex items-center gap-2">
+          <span className="font-serif text-base font-semibold">{c.name}</span>
+          {isOwn && <Badge>Your company</Badge>}
+        </span>
+        <a href={c.url} target="_blank" rel="noreferrer" className="text-xs text-muted-foreground hover:text-foreground">
+          {c.url}
+        </a>
+      </div>
+      {c.error ? (
+        <p className="text-sm text-destructive">{c.error}</p>
+      ) : (
+        <>
+          {c.uniquePositioning.length > 0 && (
+            <div>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Positioning</span>
+              <ul className="text-sm">
+                {c.uniquePositioning.map((p, j) => (
+                  <li key={j}>• {p}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {c.gaps.length > 0 && (
+            <div>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Gaps</span>
+              <ul className="text-sm">
+                {c.gaps.map((g, j) => (
+                  <li key={j}>• {g}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
 
 const POLL_INTERVAL_MS = 1500
 const MAX_POLLS = 120 // ~3 minutes — fetches + analyzes several competitor pages sequentially
@@ -62,7 +104,7 @@ export function CompetitivePanel({ initialItems }: { initialItems: CompetitiveIn
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        keyword: keyword.trim() || undefined,
+        keyword: keyword.trim(),
         competitors: competitorList.length > 0 ? competitorList : undefined,
       }),
     })
@@ -101,7 +143,7 @@ export function CompetitivePanel({ initialItems }: { initialItems: CompetitiveIn
     }, POLL_INTERVAL_MS)
   }
 
-  const valid = keyword.trim().length > 0 || competitors.trim().length > 0
+  const valid = keyword.trim().length > 0
 
   return (
     <div className="flex flex-col gap-4">
@@ -111,11 +153,11 @@ export function CompetitivePanel({ initialItems }: { initialItems: CompetitiveIn
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="keyword">Keyword (discover competitors by search)</Label>
+            <Label htmlFor="keyword">What do you want to rank for?</Label>
             <Input id="keyword" value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="e.g. SIEM platform" />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="competitors">Or named competitors (one per line — name or URL)</Label>
+            <Label htmlFor="competitors">Named competitors, optional (one per line — name or URL)</Label>
             <Textarea
               id="competitors"
               value={competitors}
@@ -143,41 +185,9 @@ export function CompetitivePanel({ initialItems }: { initialItems: CompetitiveIn
             </CardHeader>
             {expanded === item.intelId && (
               <CardContent className="flex flex-col gap-4">
+                {item.ownCompany && <CompetitorCard c={item.ownCompany} isOwn />}
                 {item.competitors.map((c, i) => (
-                  <div key={i} className="flex flex-col gap-1.5 rounded-lg border border-border p-3">
-                    <div className="flex items-baseline justify-between">
-                      <span className="font-serif text-base font-semibold">{c.name}</span>
-                      <a href={c.url} target="_blank" rel="noreferrer" className="text-xs text-muted-foreground hover:text-foreground">
-                        {c.url}
-                      </a>
-                    </div>
-                    {c.error ? (
-                      <p className="text-sm text-destructive">{c.error}</p>
-                    ) : (
-                      <>
-                        {c.uniquePositioning.length > 0 && (
-                          <div>
-                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Positioning</span>
-                            <ul className="text-sm">
-                              {c.uniquePositioning.map((p, j) => (
-                                <li key={j}>• {p}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                        {c.gaps.length > 0 && (
-                          <div>
-                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Gaps</span>
-                            <ul className="text-sm">
-                              {c.gaps.map((g, j) => (
-                                <li key={j}>• {g}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
+                  <CompetitorCard key={i} c={c} />
                 ))}
               </CardContent>
             )}

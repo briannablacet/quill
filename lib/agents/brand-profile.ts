@@ -15,12 +15,21 @@ import type { WritingStyle, BrandVoice, Messaging } from "./prompts/style-guide"
 // per userId is sufficient, no need for named/multiple brand profiles yet.
 // ---------------------------------------------------------------------------
 
+export type StyleGuidePreset = "chicago" | "ap" | "apa"
+
+export const STYLE_GUIDE_LABEL: Record<StyleGuidePreset, string> = {
+  chicago: "The Chicago Manual of Style",
+  ap: "AP Style",
+  apa: "APA Style",
+}
+
 export type BrandProfileDoc = {
   _id?: string
   userId: string
   brandName: string
   tagline?: string
   boilerplate?: { short?: string; medium?: string; long?: string }
+  styleGuidePreset: StyleGuidePreset
   voice: {
     toneDescription: string
     stylePoints: string[]
@@ -44,15 +53,15 @@ export type BrandProfileDoc = {
 
 export async function ingestBrandProfile(
   userId: string,
-  styleGuideText: string,
   messagingText: string,
+  styleGuidePreset: StyleGuidePreset,
   sourceDocuments: string[]
 ): Promise<BrandProfileDoc> {
   const { object } = await generateObject({
     model: "anthropic/claude-sonnet-5",
     schema: brandProfileExtractionSchema,
     system: BRAND_PROFILE_EXTRACTION_SYSTEM,
-    prompt: buildBrandProfileExtractionPrompt(styleGuideText, messagingText),
+    prompt: buildBrandProfileExtractionPrompt(messagingText),
     temperature: 0.1,
   })
 
@@ -62,6 +71,7 @@ export async function ingestBrandProfile(
   const doc: BrandProfileDoc = {
     userId,
     ...object,
+    styleGuidePreset,
     sourceDocuments,
     createdAt: now,
     updatedAt: now,
@@ -102,7 +112,7 @@ export function toPromptInputs(profile: BrandProfileDoc | null): {
 
   return {
     writingStyle: {
-      styleGuide: { primary: profile.brandName, customRules },
+      styleGuide: { primary: STYLE_GUIDE_LABEL[profile.styleGuidePreset], customRules },
       punctuation: { oxfordComma: profile.styleRules.oxfordComma },
     },
     brandVoice: { brandVoice: { tone: profile.voice.toneDescription } },

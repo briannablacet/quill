@@ -2,6 +2,8 @@ import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Toaster } from '@/components/ui/sonner'
 import { Nav } from '@/components/quill/nav'
+import { getUserId } from '@/lib/session'
+import { getCompanyProfile } from '@/lib/agents/company-profile'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -16,15 +18,18 @@ export const viewport: Viewport = {
   themeColor: '#e7e5dd',
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const userId = await getUserId()
+  const companyProfile = userId ? await getCompanyProfile(userId) : null
+
   return (
     <html lang="en">
       <body className="bg-background text-foreground antialiased">
-        <Nav />
+        <Nav companyName={companyProfile?.companyName} />
         {children}
         <Toaster position="bottom-left" />
         {process.env.NODE_ENV === 'production' && <Analytics />}

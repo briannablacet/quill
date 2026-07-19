@@ -16,6 +16,8 @@ type LastRun = {
   snapshot: SerpSnapshotDoc
   changes: SerpChange[]
   isFirstSnapshot: boolean
+  ownDomain?: string
+  ownPosition?: number | null
 }
 
 export function SerpPanel({ initialItems }: { initialItems: SerpSnapshotDoc[] }) {
@@ -76,7 +78,13 @@ export function SerpPanel({ initialItems }: { initialItems: SerpSnapshotDoc[] })
         if (snapRes.ok) {
           const snapshot: SerpSnapshotDoc = await snapRes.json()
           setItems((prev) => [snapshot, ...prev])
-          setLastRun({ snapshot, changes: task.result.changes ?? [], isFirstSnapshot: task.result.isFirstSnapshot })
+          setLastRun({
+            snapshot,
+            changes: task.result.changes ?? [],
+            isFirstSnapshot: task.result.isFirstSnapshot,
+            ownDomain: task.result.ownDomain,
+            ownPosition: task.result.ownPosition,
+          })
         }
         setStatus("idle")
       }
@@ -107,6 +115,12 @@ export function SerpPanel({ initialItems }: { initialItems: SerpSnapshotDoc[] })
             <CardTitle className="font-serif">{lastRun.snapshot.keyword}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
+            {lastRun.ownDomain && (
+              <p className="text-sm">
+                <span className="font-medium">Your ranking ({lastRun.ownDomain}): </span>
+                {lastRun.ownPosition ? `#${lastRun.ownPosition}` : "not in the top results"}
+              </p>
+            )}
             {lastRun.isFirstSnapshot ? (
               <p className="text-sm text-muted-foreground">First snapshot for this keyword — nothing to compare against yet.</p>
             ) : lastRun.changes.length === 0 ? (

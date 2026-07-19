@@ -16,17 +16,17 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => null)
-  const keyword = typeof body?.keyword === "string" && body.keyword.trim() ? body.keyword.trim() : undefined
+  const keyword = typeof body?.keyword === "string" ? body.keyword.trim() : ""
   const competitors = Array.isArray(body?.competitors)
     ? body.competitors.filter((c: unknown) => typeof c === "string" && c.trim())
     : undefined
 
-  if (!keyword && (!competitors || competitors.length === 0)) {
-    return NextResponse.json({ error: "Provide either a 'keyword' or a 'competitors' list" }, { status: 400 })
+  if (!keyword) {
+    return NextResponse.json({ error: "'keyword' (what you want to rank for) is required" }, { status: 400 })
   }
 
   const taskId = await enqueueTask(userId, "fetch_competitor_content", {
-    ...(keyword ? { keyword } : {}),
+    keyword,
     ...(competitors ? { competitors } : {}),
   })
 

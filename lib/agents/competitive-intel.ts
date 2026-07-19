@@ -4,6 +4,7 @@ import { getDb } from "@/lib/mongodb"
 import type { TaskDoc } from "@/lib/tasks"
 import { searchGoogle, fetchPageText } from "./serper"
 import { competitiveAnalysisSchema, COMPETITIVE_ANALYSIS_SYSTEM, buildCompetitiveAnalysisPrompt } from "./prompts/competitive-intel"
+import { getCompanyProfile } from "./company-profile"
 
 // ---------------------------------------------------------------------------
 // Competitive intel agent — fetch_competitor_content task handler.
@@ -33,6 +34,10 @@ export type CompetitiveIntelDoc = {
   // Set for named-competitor mode (the raw input list, before resolution).
   requestedCompetitors?: string[]
   competitors: CompetitorAnalysis[]
+  // The user's own company, analyzed the same way as any competitor, so
+  // their messaging can be compared directly against the field rather than
+  // read in isolation. Absent if no company profile has been set up yet.
+  ownCompany?: CompetitorAnalysis
   sourceTaskId: string
   createdAt: Date
 }
@@ -67,6 +72,34 @@ export async function resolveCompetitorTarget(input: string): Promise<{ name: st
   return { name: input, url: top.link }
 }
 
+async function analyzeTarget(target: { name: string; url: string }, keyword?: string): Promise<CompetitorAnalysis> {
+  try {
+    const pageText = await fetchPageText(target.url)
+    if (!pageText || pageText.length < 200) {
+      throw new Error("Page returned too little readable text (likely JS-rendered or blocked)")
+    }
+
+    const { object } = await generateObject({
+      model: "anthropic/claude-sonnet-5",
+      schema: competitiveAnalysisSchema,
+      system: COMPETITIVE_ANALYSIS_SYSTEM,
+      prompt: buildCompetitiveAnalysisPrompt(target.name, pageText, keyword),
+      temperature: 0.3,
+    })
+
+    return { name: target.name, url: target.url, ...object }
+  } catch (err) {
+    return {
+      name: target.name,
+      url: target.url,
+      uniquePositioning: [],
+      keyThemes: [],
+      gaps: [],
+      error: err instanceof Error ? err.message : "Unknown error",
+    }
+  }
+}
+
 export async function fetchCompetitorContent(task: TaskDoc): Promise<Record<string, unknown>> {
   const { keyword, numCompetitors = 5, competitors: requestedCompetitors } = task.payload as FetchCompetitorContentPayload
 
@@ -86,38 +119,16 @@ export async function fetchCompetitorContent(task: TaskDoc): Promise<Record<stri
   }
 
   const competitors: CompetitorAnalysis[] = []
-
   for (const target of targets) {
-    try {
-      const pageText = await fetchPageText(target.url)
-      if (!pageText || pageText.length < 200) {
-        throw new Error("Page returned too little readable text (likely JS-rendered or blocked)")
-      }
-
-      const { object } = await generateObject({
-        model: "anthropic/claude-sonnet-5",
-        schema: competitiveAnalysisSchema,
-        system: COMPETITIVE_ANALYSIS_SYSTEM,
-        prompt: buildCompetitiveAnalysisPrompt(target.name, pageText, keyword),
-        temperature: 0.3,
-      })
-
-      competitors.push({
-        name: target.name,
-        url: target.url,
-        ...object,
-      })
-    } catch (err) {
-      competitors.push({
-        name: target.name,
-        url: target.url,
-        uniquePositioning: [],
-        keyThemes: [],
-        gaps: [],
-        error: err instanceof Error ? err.message : "Unknown error",
-      })
-    }
+    competitors.push(await analyzeTarget(target, keyword))
   }
+
+  // Analyze the user's own site the same way, so their positioning/gaps can
+  // be read directly against the competitors above rather than in isolation.
+  const companyProfile = await getCompanyProfile(task.userId)
+  const ownCompany = companyProfile
+    ? await analyzeTarget({ name: companyProfile.companyName, url: companyProfile.websiteUrl }, keyword)
+    : undefined
 
   const db = await getDb()
   const intelId = randomUUID()
@@ -129,6 +140,7 @@ export async function fetchCompetitorContent(task: TaskDoc): Promise<Record<stri
     ...(keyword ? { keyword } : {}),
     ...(requestedCompetitors ? { requestedCompetitors } : {}),
     competitors,
+    ...(ownCompany ? { ownCompany } : {}),
     sourceTaskId: task.taskId,
     createdAt: now,
   })

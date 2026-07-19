@@ -2,6 +2,7 @@ import { randomUUID } from "crypto"
 import { getDb } from "@/lib/mongodb"
 import type { TaskDoc } from "@/lib/tasks"
 import { searchGoogle, type OrganicResult } from "./serper"
+import { getCompanyProfile, normalizeDomain } from "./company-profile"
 
 // ---------------------------------------------------------------------------
 // SERP monitor agent — monitor_serp task handler.
@@ -25,6 +26,11 @@ export type SerpSnapshotDoc = {
   userId: string
   keyword: string
   results: SerpResultSnapshot[]
+  // The user's own domain (from their company profile) and where it landed
+  // in this snapshot's results, if it appeared at all — this is what makes
+  // "SERP monitoring" answer "where do I rank," not just "who's up there."
+  ownDomain?: string
+  ownPosition?: number | null
   capturedAt: Date
 }
 
@@ -94,6 +100,11 @@ export async function monitorSerp(task: TaskDoc): Promise<Record<string, unknown
 
   const changes = previous.length > 0 ? diffSnapshots(previous[0].results, current) : []
 
+  const companyProfile = await getCompanyProfile(task.userId)
+  const ownDomain = companyProfile ? normalizeDomain(companyProfile.websiteUrl) : undefined
+  const ownResult = ownDomain ? current.find((r) => normalizeDomain(r.link) === ownDomain) : undefined
+  const ownPosition = ownDomain ? ownResult?.position ?? null : undefined
+
   const snapshotId = randomUUID()
   const now = new Date()
 
@@ -102,6 +113,7 @@ export async function monitorSerp(task: TaskDoc): Promise<Record<string, unknown
     userId: task.userId,
     keyword,
     results: current,
+    ...(ownDomain ? { ownDomain, ownPosition } : {}),
     capturedAt: now,
   })
 
@@ -112,5 +124,6 @@ export async function monitorSerp(task: TaskDoc): Promise<Record<string, unknown
     resultCount: current.length,
     changeCount: changes.length,
     changes,
+    ...(ownDomain ? { ownDomain, ownPosition } : {}),
   }
 }

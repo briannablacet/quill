@@ -37,24 +37,21 @@ export const brandProfileExtractionSchema = z.object({
   }),
 })
 
-export const BRAND_PROFILE_EXTRACTION_SYSTEM = `You extract structured brand voice, style, and messaging data from real internal documents.
-Extract only what the source documents actually say — do not invent style rules, proof points, or messaging that isn't genuinely present in the text.
-The source text was extracted from Word documents and may contain leftover XML/markup noise, table artifacts, or a table of contents — ignore that noise and extract only substantive content.`
+export const BRAND_PROFILE_EXTRACTION_SYSTEM = `You extract structured brand voice, style, and messaging data from a real internal messaging framework document.
+Extract only what the source document actually says — do not invent style rules, proof points, or messaging that isn't genuinely present in the text.
+The source text may have been extracted from a Word document and may contain leftover XML/markup noise, table artifacts, or a table of contents — ignore that noise and extract only substantive content.`
 
-export function buildBrandProfileExtractionPrompt(styleGuideText: string, messagingText: string): string {
-  return `Extract a structured brand profile from these two real internal documents.
+export function buildBrandProfileExtractionPrompt(messagingText: string): string {
+  return `Extract a structured brand profile from this real internal messaging framework document.
 
-=== STYLE GUIDE ===
-${styleGuideText}
-
-=== MESSAGING / MESSAGE PLATFORM DOCUMENT ===
+=== MESSAGING FRAMEWORK ===
 ${messagingText}
 
 Extract:
 - Brand name, tagline, and boilerplate copy (if multiple lengths are given, sort into short/medium/long)
-- Voice: how tone is described, concrete style points (e.g. active voice, pronoun rules), and specific phrases/words to avoid
-- Style rules: Oxford comma usage, CTA formatting, term-by-term style conventions (e.g. specific capitalization/hyphenation rules for named terms), and other concrete formatting rules
+- Voice: how tone is described, concrete style points (e.g. active voice, pronoun rules), and specific phrases/words to avoid, if the document states any
+- Style rules: Oxford comma usage, CTA formatting, term-by-term style conventions (e.g. specific capitalization/hyphenation rules for named terms), and other concrete formatting rules, if the document states any (formal grammar/punctuation style guide choice is handled separately — don't invent style rules that aren't in this document)
 - Messaging: the value proposition, key recurring messages, and specific proof points (real stats/claims, not generic marketing language)
 
-Be selective — extract genuinely reusable, specific rules and messages, not the entire document restated.`
+Be selective — extract genuinely reusable, specific rules and messages, not the entire document restated. It's fine for a field to come back empty if the document doesn't cover it.`
 }
