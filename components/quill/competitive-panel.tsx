@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import type { CompetitiveIntelDoc, CompetitorAnalysis } from "@/lib/agents/competitive-intel"
+import { AgentNote } from "./agent-note"
 import { nudgeWorker } from "./types"
 
 function CompetitorCard({ c, isOwn }: { c: CompetitorAnalysis; isOwn?: boolean }) {
@@ -194,6 +195,8 @@ export function CompetitivePanel({ initialItems }: { initialItems: CompetitiveIn
           </Card>
         ))}
       </div>
+
+      <AgentNote>Competitive Intel agent</AgentNote>
     </div>
   )
 }

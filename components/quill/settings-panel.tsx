@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { parseDocumentFile } from "@/lib/parse-document"
+import { AgentNote } from "./agent-note"
 import type { BrandProfileDoc, StyleGuidePreset } from "@/lib/agents/brand-profile"
 import type { CompanyProfileDoc } from "@/lib/agents/company-profile"
 
@@ -181,6 +182,8 @@ export function SettingsPanel({
           {error && <p className="text-sm text-destructive">{error}</p>}
         </CardContent>
       </Card>
+
+      <AgentNote>Brand Profile extraction agent</AgentNote>
     </div>
   )
 }

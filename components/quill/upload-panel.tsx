@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { ScorecardView } from "./scorecard-view"
+import { AgentNote } from "./agent-note"
 import { parseDocumentFile } from "@/lib/parse-document"
 import { nudgeWorker } from "./types"
 import type { ContentItem, ContentMode } from "./types"
@@ -201,6 +202,8 @@ export function UploadPanel({ onReviewed }: { onReviewed?: (item: ContentItem) =
           {error && <p className="text-sm text-destructive">{error}</p>}
         </CardContent>
       </Card>
+
+      <AgentNote>Evaluator agent</AgentNote>
     </div>
   )
 }

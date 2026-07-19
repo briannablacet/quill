@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ModeFormFields, buildPayload, isFormValid } from "./mode-fields"
 import { ScorecardView } from "./scorecard-view"
+import { CopyButton } from "./copy-button"
+import { AgentNote } from "./agent-note"
 import { UI_MODES, nudgeWorker, type ContentItem, type ContentMode } from "./types"
 
 type Status = "idle" | "queued" | "working" | "done" | "error"
@@ -176,7 +178,10 @@ export function GeneratePanel({ onGenerated }: { onGenerated?: (item: ContentIte
           <CardContent className="flex flex-col gap-4">
             <ScorecardView content={content} />
             <div className="flex flex-col gap-1.5 rounded-lg border border-border p-3">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Draft</span>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Draft</span>
+                <CopyButton text={content.items ? content.items.join("\n\n") : content.body} />
+              </div>
               <pre className="max-h-96 overflow-y-auto whitespace-pre-wrap font-serif text-base leading-relaxed">
                 {content.items ? content.items.join("\n\n") : content.body}
               </pre>
@@ -184,6 +189,8 @@ export function GeneratePanel({ onGenerated }: { onGenerated?: (item: ContentIte
           </CardContent>
         </Card>
       )}
+
+      <AgentNote>Writer agent, Evaluator agent, Orchestrator</AgentNote>
     </div>
   )
 }

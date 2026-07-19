@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { MODE_LABEL, nudgeWorker } from "./types"
+import { AgentNote } from "./agent-note"
 import type { IdeationDoc } from "@/lib/agents/ideation"
 
 const POLL_INTERVAL_MS = 1500
@@ -103,6 +104,8 @@ export function IdeasPanel({ initialItems }: { initialItems: IdeationDoc[] }) {
           </Card>
         ))}
       </div>
+
+      <AgentNote>Ideation agent</AgentNote>
     </div>
   )
 }

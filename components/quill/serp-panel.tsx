@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import type { SerpSnapshotDoc, SerpChange } from "@/lib/agents/serp-monitor"
+import { AgentNote } from "./agent-note"
 import { nudgeWorker } from "./types"
 
 const POLL_INTERVAL_MS = 1500
@@ -185,6 +186,8 @@ export function SerpPanel({ initialItems }: { initialItems: SerpSnapshotDoc[] })
           </button>
         ))}
       </div>
+
+      <AgentNote>SERP Monitor agent</AgentNote>
     </div>
   )
 }
