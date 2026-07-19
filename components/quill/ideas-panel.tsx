@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { MODE_LABEL } from "./types"
+import { MODE_LABEL, nudgeWorker } from "./types"
 import type { IdeationDoc } from "@/lib/agents/ideation"
 
 const POLL_INTERVAL_MS = 1500
@@ -44,7 +44,7 @@ export function IdeasPanel({ initialItems }: { initialItems: IdeationDoc[] }) {
         setError("Taking longer than expected.")
         return
       }
-      fetch("/api/worker").catch(() => {})
+      nudgeWorker()
       const taskRes = await fetch(`/api/tasks/${taskId}`)
       if (!taskRes.ok) return
       const task = await taskRes.json()

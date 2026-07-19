@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import type { SerpSnapshotDoc, SerpChange } from "@/lib/agents/serp-monitor"
+import { nudgeWorker } from "./types"
 
 const POLL_INTERVAL_MS = 1500
 const MAX_POLLS = 40 // ~1 minute — a single search + diff, no LLM call
@@ -59,7 +60,7 @@ export function SerpPanel({ initialItems }: { initialItems: SerpSnapshotDoc[] })
         setError("Taking longer than expected.")
         return
       }
-      fetch("/api/worker").catch(() => {})
+      nudgeWorker()
       const taskRes = await fetch(`/api/tasks/${taskId}`)
       if (!taskRes.ok) return
       const task = await taskRes.json()

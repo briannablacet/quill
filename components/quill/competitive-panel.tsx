@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import type { CompetitiveIntelDoc } from "@/lib/agents/competitive-intel"
+import { nudgeWorker } from "./types"
 
 const POLL_INTERVAL_MS = 1500
 const MAX_POLLS = 120 // ~3 minutes — fetches + analyzes several competitor pages sequentially
@@ -35,7 +36,7 @@ export function CompetitivePanel({ initialItems }: { initialItems: CompetitiveIn
         setError("Taking longer than expected — check back shortly.")
         return
       }
-      fetch("/api/worker").catch(() => {})
+      nudgeWorker()
       const res = await fetch(`/api/competitive/${intelId}`)
       if (res.ok) {
         const item: CompetitiveIntelDoc = await res.json()
@@ -83,7 +84,7 @@ export function CompetitivePanel({ initialItems }: { initialItems: CompetitiveIn
         setError("Taking longer than expected — check back shortly.")
         return
       }
-      fetch("/api/worker").catch(() => {})
+      nudgeWorker()
       const taskRes = await fetch(`/api/tasks/${taskId}`)
       if (!taskRes.ok) return
       const task = await taskRes.json()

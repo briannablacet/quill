@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ModeFormFields, buildPayload, isFormValid } from "./mode-fields"
 import { ScorecardView } from "./scorecard-view"
-import { UI_MODES, type ContentItem, type ContentMode } from "./types"
+import { UI_MODES, nudgeWorker, type ContentItem, type ContentMode } from "./types"
 
 type Status = "idle" | "queued" | "working" | "done" | "error"
 
@@ -102,9 +102,7 @@ export function GeneratePanel({ onGenerated }: { onGenerated?: (item: ContentIte
         return
       }
 
-      // Nudge the queue (dev-only in practice — production relies on cron;
-      // this fetch simply no-ops there if CRON_SECRET blocks it).
-      fetch("/api/worker").catch(() => {})
+      nudgeWorker()
 
       if (!contentId) {
         const taskRes = await fetch(`/api/tasks/${taskId}`)

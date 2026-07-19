@@ -2,6 +2,19 @@
 // Dates arrive as strings). Kept separate from the server type so client
 // components never import server-only files (mongodb driver, etc.).
 
+// Nudges the worker to tick sooner than the next cron minute — dev-only.
+// In production this was calling /api/worker every ~1.5s during any active
+// generation across every panel, each a fresh serverless invocation with
+// its own DB connection; combined with an uncapped connection pool (see
+// lib/mongodb.ts) this was a real contributor to exhausting the shared
+// Atlas cluster's connection limit (confirmed live 2026-07-19). Production
+// already has a real cron ticking every minute — no need to nudge it.
+export function nudgeWorker() {
+  if (process.env.NODE_ENV !== "production") {
+    fetch("/api/worker").catch(() => {})
+  }
+}
+
 export type ContentMode = "blog_post" | "taglines" | "social_media" | "landing_page" | "case_study" | "battlecard"
 
 export type ScorecardBreakdownItem = {
