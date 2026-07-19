@@ -22,6 +22,7 @@ export default async function CompetitivePage() {
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-10">
+      <h1 className="font-serif text-2xl font-semibold tracking-tight">Competitive Market Analysis</h1>
       <p className="text-[15.5px] text-muted-foreground">
         Fetches real competitor page content and analyzes messaging and positioning — not LLM recall.
       </p>
