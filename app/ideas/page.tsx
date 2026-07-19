@@ -22,7 +22,7 @@ export default async function IdeasPage() {
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-10">
-      <p className="max-w-[58ch] text-[15.5px] text-muted-foreground">
+      <p className="text-[15.5px] text-muted-foreground">
         Suggests what to write next, based on what actually scored well in your real Scorecard data.
       </p>
       <IdeasPanel initialItems={initialItems} />

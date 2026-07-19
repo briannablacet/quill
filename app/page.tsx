@@ -22,7 +22,7 @@ export default async function Page() {
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-10">
-      <p className="max-w-[58ch] text-[15.5px] text-muted-foreground">
+      <p className="text-[15.5px] text-muted-foreground">
         Writes, grades, and rewrites its own drafts — five content modes, real Scorecard grading, automatic regeneration.
       </p>
       <Workspace initialContent={initialContent} />

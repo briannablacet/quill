@@ -14,9 +14,9 @@ export function Workspace({ initialContent }: { initialContent: ContentItem[] })
   return (
     <Tabs value={tab} onValueChange={setTab}>
       <TabsList variant="line">
-        <TabsTrigger value="new">New</TabsTrigger>
-        <TabsTrigger value="review">Review Upload</TabsTrigger>
-        <TabsTrigger value="history">History{content.length > 0 ? ` (${content.length})` : ""}</TabsTrigger>
+        <TabsTrigger value="new">Write</TabsTrigger>
+        <TabsTrigger value="review">Edit/Review</TabsTrigger>
+        <TabsTrigger value="history">View History{content.length > 0 ? ` (${content.length})` : ""}</TabsTrigger>
       </TabsList>
       <TabsContent value="new">
         <GeneratePanel

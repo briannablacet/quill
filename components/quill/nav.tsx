@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 
 const LINKS = [
   { href: "/", label: "Content Studio" },
-  { href: "/competitive", label: "Competitive Intel" },
+  { href: "/competitive", label: "Competitive Market Analysis" },
   { href: "/serp", label: "SERP Monitor" },
   { href: "/ideas", label: "Ideas" },
   { href: "/settings", label: "Settings" },

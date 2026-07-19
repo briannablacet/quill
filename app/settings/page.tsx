@@ -17,7 +17,7 @@ export default async function SettingsPage() {
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-10">
-      <p className="max-w-[58ch] text-[15.5px] text-muted-foreground">
+      <p className="text-[15.5px] text-muted-foreground">
         Tell Quill who you are — your company, your voice, and your style — so every generated piece and every competitive check reflects it.
       </p>
       <SettingsPanel
