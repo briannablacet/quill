@@ -9,7 +9,17 @@ type TaskType = "generate_content" | "monitor_serp" | "fetch_competitor_content"
 
 type ChatMessage =
   | { id: string; role: "user" | "assistant"; content: string }
-  | { id: string; role: "action"; taskId: string; type: TaskType; summary: string; status: "pending" | "done" | "failed"; resultText?: string }
+  | {
+      id: string
+      role: "action"
+      taskId: string
+      type: TaskType
+      summary: string
+      status: "pending" | "done" | "failed"
+      resultText?: string
+      href?: string
+      linkText?: string
+    }
 
 const ACTION_LINK: Record<TaskType, { href: string; label: string }> = {
   generate_content: { href: "/studio", label: "Content Studio" },
@@ -18,12 +28,20 @@ const ACTION_LINK: Record<TaskType, { href: string; label: string }> = {
   suggest_ideas: { href: "/ideas", label: "Ideas" },
 }
 
+// The destination page for generate_content (a specific draft, via
+// DraftResultCard) already shows the Scorecard once grading finishes — the
+// assistant doesn't need to separately track or announce that step, just
+// confirm the draft exists and link straight to it.
+function actionResult(type: TaskType, result: Record<string, unknown>): { text: string; href: string; linkText: string } {
+  if (type === "generate_content" && typeof result.contentId === "string") {
+    return { text: `Draft ready — "${result.topic}".`, href: `/studio/${result.contentId}`, linkText: "View draft" }
+  }
+  const link = ACTION_LINK[type]
+  return { text: formatResult(type, result), href: link.href, linkText: `View in ${link.label}` }
+}
+
 function formatResult(type: TaskType, result: Record<string, unknown>): string {
   switch (type) {
-    case "generate_content": {
-      const count = typeof result.wordCount === "number" ? `${result.wordCount} words` : `${result.itemCount ?? ""} items`
-      return `Draft written — "${result.topic}" (${count}). It's being graded now.`
-    }
     case "monitor_serp": {
       if (result.ownDomain) {
         const rank = result.ownPosition ? `#${result.ownPosition}` : "not in the top results"
@@ -61,11 +79,10 @@ export function AssistantWidget() {
           if (!res.ok) return
           const task = await res.json()
           if (task.status === "done") {
+            const { text, href, linkText } = actionResult(action.type, task.result ?? {})
             setMessages((cur) =>
               cur.map((m) =>
-                m.role === "action" && m.taskId === action.taskId
-                  ? { ...m, status: "done", resultText: formatResult(m.type, task.result ?? {}) }
-                  : m
+                m.role === "action" && m.taskId === action.taskId ? { ...m, status: "done", resultText: text, href, linkText } : m
               )
             )
           } else if (task.status === "failed") {
@@ -150,16 +167,15 @@ export function AssistantWidget() {
             )}
             {messages.map((m) => {
               if (m.role === "action") {
-                const link = ACTION_LINK[m.type]
                 return (
                   <div key={m.id} className="flex flex-col gap-1 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm">
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                       {m.status === "pending" ? "Working…" : m.status === "failed" ? "Failed" : "Done"}
                     </span>
                     <span>{m.status === "pending" ? m.summary : m.resultText}</span>
-                    {m.status !== "pending" && (
-                      <Link href={link.href} className="text-xs text-primary hover:underline">
-                        View in {link.label} →
+                    {m.status === "done" && m.href && (
+                      <Link href={m.href} className="text-xs text-primary hover:underline">
+                        {m.linkText} →
                       </Link>
                     )}
                   </div>
