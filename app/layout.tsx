@@ -2,6 +2,7 @@ import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Toaster } from '@/components/ui/sonner'
 import { Nav } from '@/components/quill/nav'
+import { AssistantWidget } from '@/components/quill/assistant-widget'
 import { getUserId } from '@/lib/session'
 import { getCompanyProfile } from '@/lib/agents/company-profile'
 import './globals.css'
@@ -31,6 +32,7 @@ export default async function RootLayout({
       <body className="bg-background text-foreground antialiased">
         <Nav companyName={companyProfile?.companyName} />
         {children}
+        {userId && <AssistantWidget />}
         <Toaster position="bottom-left" />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
