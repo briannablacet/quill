@@ -1,0 +1,32 @@
+import { redirect } from "next/navigation"
+import { getUserId } from "@/lib/session"
+import { getDb } from "@/lib/mongodb"
+import { Workspace } from "@/components/quill/workspace"
+import type { ContentItem } from "@/components/quill/types"
+
+export const dynamic = "force-dynamic"
+
+export default async function Page() {
+  const userId = await getUserId()
+  if (!userId) redirect("/sign-in")
+
+  const db = await getDb()
+  const docs = await db
+    .collection("content")
+    .find({ userId })
+    .sort({ createdAt: -1 })
+    .limit(50)
+    .toArray()
+
+  const initialContent: ContentItem[] = JSON.parse(JSON.stringify(docs))
+
+  return (
+    <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 pt-4 pb-10">
+      <p className="text-[15.5px] text-muted-foreground">
+        Write new content, or paste in something written elsewhere, and grade it against the same Content Quality
+        Scorecard.
+      </p>
+      <Workspace initialContent={initialContent} />
+    </main>
+  )
+}

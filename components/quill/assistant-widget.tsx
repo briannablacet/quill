@@ -12,7 +12,7 @@ type ChatMessage =
   | { id: string; role: "action"; taskId: string; type: TaskType; summary: string; status: "pending" | "done" | "failed"; resultText?: string }
 
 const ACTION_LINK: Record<TaskType, { href: string; label: string }> = {
-  generate_content: { href: "/", label: "Content Studio" },
+  generate_content: { href: "/studio", label: "Content Studio" },
   monitor_serp: { href: "/serp", label: "SERP Monitor" },
   fetch_competitor_content: { href: "/competitive", label: "Competitive Market Analysis" },
   suggest_ideas: { href: "/ideas", label: "Ideas" },
