@@ -1,5 +1,7 @@
 # Quill
 
+> **New here?** Read [`START-HERE.md`](START-HERE.md) first: a short tour of what the app does and why. This README is the technical map.
+
 Quill is an **agentic content-marketing system**. You ask for content (a blog post, landing page, case study, social posts, a battlecard, taglines) or for research (competitor messaging, search rankings, content ideas). Quill queues the work as tasks, and a background worker runs AI agents that write it, **score it**, and **rewrite it if the score is too low**, without you having to push it along.
 
 It's a single-user personal tool. Its design draws on Skribil's content capabilities (`marketing-content-lab`) and the architecture of `chief-of-staff-dashboard`, which it was originally cloned from. The design brief is in **`migration.md`**.
